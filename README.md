@@ -1,6 +1,4 @@
-markdown
-Copy code
-# YouTube Downloader
+# Vur Due
 
 A simple Python-based YouTube downloader application with a graphical user interface (GUI) built using tkinter.
 
@@ -13,21 +11,15 @@ A simple Python-based YouTube downloader application with a graphical user inter
 
 ## Installation
 
-1. Clone the repository or download the source code:
-
- `git clone https://github.com/vivesm/vur_de.git`
+1. Clone the repository or download the source code: `git clone https://github.com/vivesm/vur_de.git`
 
 2. Change into the downloaded directory:
 
-3. Install the required dependencies:
-
- `pip install -r requirements.txt`
+3. Install the required dependencies: `pip install -r requirements.txt`
 
 ## Usage
 
-1. Run the application:
-
- `python youtube_downloader.py`
+1. Run the application: `python youtube_downloader.py`
 
 2. Enter a YouTube URL in the text box.
 
