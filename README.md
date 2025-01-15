@@ -13,7 +13,7 @@ A modern, user-friendly YouTube downloader application built with PyQt and `yt-d
 
 ## Screenshots
 
-![App Screenshot](path/to/screenshot.png)
+![App Screenshot](VurDe4.png)
 
 ## Requirements
 
