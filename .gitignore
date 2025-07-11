@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Flask
+instance/
+.webassets-cache
+
+# Database
+*.db
+downloads.db
+
+# Logs
+*.log
+flask.log
+server.log
+
+# Test files
+test_*.py
+test_*.html
+
+# Backup files
+*_backup.py
+*.bak
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Downloaded files
+/tmp/
+/downloads/
+
+# Environment variables
+.env
+EOF < /dev/null
