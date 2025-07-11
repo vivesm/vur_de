@@ -29,8 +29,8 @@ A modern Python-based YouTube video/audio downloader with both CLI and web inter
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/yourusername/vur-de.git
-   cd vur-de
+   git clone https://github.com/vivesm/vur_de.git
+   cd vur_de
    ```
 
 2. Install dependencies:
