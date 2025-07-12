@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vur-De - YouTube Downloader</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-gradient"></div>
+    
+    <!-- Queue Sidebar -->
+    <div id="queue-sidebar" class="queue-sidebar">
+        <div class="queue-header">
+            <h2>Download Queue</h2>
+            <button class="queue-close-btn" onclick="toggleQueueSidebar()">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="queue-content">
+            <!-- Active Downloads -->
+            <div class="queue-section">
+                <h3 class="queue-section-title">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2"/>
+                        <path d="M8 4V8L10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Active Downloads (<span id="active-count">0</span>)
+                </h3>
+                <div id="active-downloads" class="queue-items"></div>
+            </div>
+            
+            <!-- Pending Downloads -->
+            <div class="queue-section">
+                <h3 class="queue-section-title">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2"/>
+                        <path d="M8 5V8M8 11H8.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Pending (<span id="pending-count">0</span>)
+                </h3>
+                <div id="pending-downloads" class="queue-items"></div>
+            </div>
+            
+            <!-- Completed Downloads -->
+            <div class="queue-section">
+                <h3 class="queue-section-title">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2"/>
+                        <path d="M5 8L7 10L11 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Completed (<span id="completed-count">0</span>)
+                </h3>
+                <div id="completed-downloads" class="queue-items"></div>
+            </div>
+        </div>
+        
+        <div class="queue-footer">
+            <button class="queue-action-btn" onclick="showHistory()">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M8 2V8L11 11M14 8C14 11.3137 11.3137 14 8 14C4.68629 14 2 11.3137 2 8C2 4.68629 4.68629 2 8 2C11.3137 2 14 4.68629 14 8Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                View History
+            </button>
+        </div>
+    </div>
+    
+    <!-- Queue Toggle Button -->
+    <button class="queue-toggle-btn" onclick="toggleQueueSidebar()" aria-label="Toggle download queue">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="4" width="18" height="4" rx="1" stroke="currentColor" stroke-width="2"/>
+            <rect x="3" y="10" width="18" height="4" rx="1" stroke="currentColor" stroke-width="2"/>
+            <rect x="3" y="16" width="18" height="4" rx="1" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        <span class="queue-badge" id="queue-badge" style="display: none;">0</span>
+    </button>
+    
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="8" fill="url(#gradient)"/>
+                        <path d="M16 26V14L26 20L16 26Z" fill="white"/>
+                        <defs>
+                            <linearGradient id="gradient" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#FF0000"/>
+                                <stop offset="1" stop-color="#FF4500"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <h1>Vur-De</h1>
+                </div>
+                <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+                    <svg class="sun-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="2"/>
+                        <path d="M10 1V3M10 17V19M19 10H17M3 10H1M16.364 16.364L15 15M5 5L3.636 3.636M16.364 3.636L15 5M5 15L3.636 16.364" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <svg class="moon-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" style="display: none;">
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707 8.001 8.001 0 1017.293 13.293z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+            <p class="tagline">Download YouTube videos & music with style</p>
+        </header>
+        
+        <div id="ffmpeg-warning" class="alert alert-warning" style="display: none;">
+            <svg class="alert-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M10 6V10M10 14H10.01M19 10C19 14.9706 14.9706 19 10 19C5.02944 19 1 14.9706 1 10C1 5.02944 5.02944 1 10 1C14.9706 1 19 5.02944 19 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <p id="ffmpeg-message"></p>
+        </div>
+        
+        <main class="main-content">
+            <form id="download-form" class="download-form">
+                <div class="url-input-wrapper">
+                    <input type="url" id="url" name="url" placeholder="Paste YouTube URL here..." required>
+                    <button type="button" class="clear-btn" onclick="clearUrlInput()" style="display: none;" aria-label="Clear URL">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="paste-btn" onclick="pasteFromClipboard()" aria-label="Paste from clipboard">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M8 3H12M8 3C8 1.89543 8.89543 1 10 1C11.1046 1 12 1.89543 12 3M8 3H6C4.89543 3 4 3.89543 4 5V17C4 18.1046 4.89543 19 6 19H14C15.1046 19 16 18.1046 16 17V5C16 3.89543 15.1046 3 14 3H12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Paste
+                    </button>
+                </div>
+                
+                <div class="format-selector" role="group" aria-label="Download format">
+                    <button type="button" class="format-btn active" data-format="audio" aria-label="Download as audio MP3" aria-pressed="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M9 18V5L16 9L16 14L9 18Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M6 15C6 16.6569 4.65685 18 3 18C1.34315 18 0 16.6569 0 15C0 13.3431 1.34315 12 3 12C4.65685 12 6 13.3431 6 15Z" fill="currentColor"/>
+                            <path d="M20 14C20 15.6569 18.6569 17 17 17C15.3431 17 14 15.6569 14 14C14 12.3431 15.3431 11 17 11C18.6569 11 20 12.3431 20 14Z" fill="currentColor"/>
+                        </svg>
+                        <span>Audio (MP3)</span>
+                    </button>
+                    <button type="button" class="format-btn" data-format="video" aria-label="Download as video MP4" aria-pressed="false">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="2"/>
+                            <path d="M10 9V15L15 12L10 9Z" fill="currentColor"/>
+                        </svg>
+                        <span>Video (MP4)</span>
+                    </button>
+                </div>
+                
+                <input type="hidden" name="format" value="audio">
+                
+                <div class="form-group playlist-options" id="playlist-options" style="display: none;">
+                    <label for="playlist-limit">Playlist Download Limit (leave empty for all)</label>
+                    <div class="playlist-limit-input">
+                        <input type="number" id="playlist-limit" name="playlist_limit" placeholder="Unlimited" min="1">
+                        <span class="limit-label">videos</span>
+                    </div>
+                </div>
+                
+                <button type="button" id="download-btn" class="download-btn" onclick="startDownload()" aria-label="Start download">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <path d="M10 2V13M10 13L14 9M10 13L6 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M1 13V17C1 18.1046 1.89543 19 3 19H17C18.1046 19 19 18.1046 19 17V13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <span>Download</span>
+                </button>
+            </form>
+        
+            <div id="progress-container" class="progress-section" style="display: none;">
+                <div class="progress-header">
+                    <h3>Download Progress</h3>
+                    <button type="button" class="cancel-btn" onclick="cancelDownload()" style="display: none;">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Cancel
+                    </button>
+                </div>
+                <div class="progress-content">
+                    <p id="status-text" class="status-text">Initializing...</p>
+                    <div class="progress-wrapper">
+                        <div class="progress-bar">
+                            <div id="progress-fill" class="progress-fill"></div>
+                        </div>
+                        <span id="progress-percentage" class="progress-percentage">0%</span>
+                    </div>
+                    <p id="progress-details" class="progress-details"></p>
+                </div>
+                <div id="download-ready" class="download-ready" style="display: none;">
+                    <div class="success-icon">
+                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                            <circle cx="24" cy="24" r="24" fill="#10B981" fill-opacity="0.1"/>
+                            <path d="M33 18L21 30L15 24" stroke="#10B981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div id="download-info" class="download-info"></div>
+                    <button id="browser-download-btn" class="action-btn primary">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M3 17C3 18.1046 3.89543 19 5 19H15C16.1046 19 17 18.1046 17 17M10 14V2M10 14L14 10M10 14L6 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span>Save to Computer</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Completed Files Section for Playlists -->
+            <div id="completed-files-section" class="completed-files-section" style="display: none;">
+                <div class="completed-files-header">
+                    <h3>Completed Files</h3>
+                    <div class="bulk-actions">
+                        <button class="action-btn secondary" onclick="downloadAllCompleted()">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M8 2V10M8 10L5 7M8 10L11 7M2 10V13C2 13.5523 2.44772 14 3 14H13C13.5523 14 14 13.5523 14 13V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span>Download All</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="completed-files-list" class="completed-files-list">
+                    <!-- Files will be added here dynamically -->
+                </div>
+            </div>
+            
+            <div id="preview-container" class="preview-section" style="display: none;">
+                <div id="preview-loading" class="preview-loading">
+                    <div class="spinner"></div>
+                    <p>Fetching video info...</p>
+                </div>
+                <div id="preview-content" class="preview-content"></div>
+            </div>
+            
+            <div id="error-container" class="alert alert-error" style="display: none;">
+                <svg class="alert-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M10 6V10M10 14H10.01M19 10C19 14.9706 14.9706 19 10 19C5.02944 19 1 14.9706 1 10C1 5.02944 5.02944 1 10 1C14.9706 1 19 5.02944 19 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <div class="error-content">
+                    <p id="error-message"></p>
+                    <button type="button" class="retry-btn" onclick="retryDownload()" style="display: none;">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M2 8C2 11.3137 4.68629 14 8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C6.61396 2 5.32914 2.42853 4.26398 3.16146M2 2V6H6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Retry
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        // Theme management
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        }
+        
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+        
+        function updateThemeIcon(theme) {
+            const sunIcon = document.querySelector('.sun-icon');
+            const moonIcon = document.querySelector('.moon-icon');
+            
+            if (theme === 'dark') {
+                sunIcon.style.display = 'none';
+                moonIcon.style.display = 'block';
+            } else {
+                sunIcon.style.display = 'block';
+                moonIcon.style.display = 'none';
+            }
+        }
+        
+        // Initialize theme on page load
+        initTheme();
+        
+        // Queue Management Functions
+        let queueInterval = null;
+        let queueSidebarOpen = false;
+        
+        function toggleQueueSidebar() {
+            const sidebar = document.getElementById('queue-sidebar');
+            queueSidebarOpen = !queueSidebarOpen;
+            
+            if (queueSidebarOpen) {
+                sidebar.classList.add('open');
+                startQueuePolling();
+            } else {
+                sidebar.classList.remove('open');
+                stopQueuePolling();
+            }
+        }
+        
+        function startQueuePolling() {
+            // Poll immediately
+            updateQueueStatus();
+            
+            // Then poll every 2 seconds
+            queueInterval = setInterval(updateQueueStatus, 2000);
+        }
+        
+        function stopQueuePolling() {
+            if (queueInterval) {
+                clearInterval(queueInterval);
+                queueInterval = null;
+            }
+        }
+        
+        async function updateQueueStatus() {
+            try {
+                const response = await fetch('/queue/status');
+                const data = await response.json();
+                
+                // Update counts
+                const activeCount = Object.keys(data.active).length;
+                const pendingCount = data.pending.length;
+                const completedCount = Object.keys(data.completed).length;
+                
+                document.getElementById('active-count').textContent = activeCount;
+                document.getElementById('pending-count').textContent = pendingCount;
+                document.getElementById('completed-count').textContent = completedCount;
+                
+                // Update badge
+                const totalActive = activeCount + pendingCount;
+                const badge = document.getElementById('queue-badge');
+                if (totalActive > 0) {
+                    badge.textContent = totalActive;
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+                
+                // Update active downloads
+                updateQueueSection('active-downloads', data.active, 'active');
+                
+                // Update pending downloads
+                updateQueueSection('pending-downloads', data.pending, 'pending');
+                
+                // Update completed downloads
+                updateQueueSection('completed-downloads', data.completed, 'completed');
+                
+            } catch (error) {
+                console.error('Error updating queue status:', error);
+            }
+        }
+        
+        function updateQueueSection(containerId, items, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            if (type === 'active' || type === 'completed') {
+                // Handle object format
+                Object.values(items).forEach(item => {
+                    container.appendChild(createQueueItem(item, type));
+                });
+            } else {
+                // Handle array format for pending
+                items.forEach(item => {
+                    container.appendChild(createQueueItem(item, type));
+                });
+            }
+            
+            if (container.children.length === 0) {
+                container.innerHTML = '<div class="queue-empty">No downloads</div>';
+            }
+        }
+        
+        function createQueueItem(item, type) {
+            const div = document.createElement('div');
+            div.className = 'queue-item';
+            
+            const title = item.title || 'Unknown Title';
+            const progress = item.progress || 0;
+            
+            let actionsHtml = '';
+            if (type === 'active') {
+                actionsHtml = `
+                    <button class="queue-item-btn pause" onclick="pauseDownload('${item.id}')">Pause</button>
+                    <button class="queue-item-btn cancel" onclick="cancelQueueDownload('${item.id}')">Cancel</button>
+                `;
+            } else if (type === 'pending') {
+                if (item.status === 'paused') {
+                    actionsHtml = `
+                        <button class="queue-item-btn resume" onclick="resumeDownload('${item.id}')">Resume</button>
+                        <button class="queue-item-btn cancel" onclick="cancelQueueDownload('${item.id}')">Cancel</button>
+                    `;
+                } else {
+                    actionsHtml = `
+                        <button class="queue-item-btn cancel" onclick="cancelQueueDownload('${item.id}')">Cancel</button>
+                    `;
+                }
+            } else if (type === 'completed') {
+                actionsHtml = `
+                    <button class="queue-item-btn" onclick="redownload('${item.id}')">Re-download</button>
+                `;
+            }
+            
+            let progressHtml = '';
+            if (type === 'active' && progress > 0) {
+                progressHtml = `
+                    <div class="queue-item-progress">
+                        <div class="queue-progress-bar">
+                            <div class="queue-progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="queue-progress-text">
+                            <span>${progress}%</span>
+                            <span>${item.speed || 'N/A'}</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            div.innerHTML = `
+                <div class="queue-item-header">
+                    <div>
+                        <div class="queue-item-title">${title}</div>
+                        <div class="queue-item-url">${item.url}</div>
+                    </div>
+                    <div class="queue-item-actions">
+                        ${actionsHtml}
+                    </div>
+                </div>
+                ${progressHtml}
+            `;
+            
+            return div;
+        }
+        
+        async function pauseDownload(downloadId) {
+            try {
+                const response = await fetch(`/queue/pause/${downloadId}`, { method: 'POST' });
+                if (response.ok) {
+                    updateQueueStatus();
+                }
+            } catch (error) {
+                console.error('Error pausing download:', error);
+            }
+        }
+        
+        async function resumeDownload(downloadId) {
+            try {
+                const response = await fetch(`/queue/resume/${downloadId}`, { method: 'POST' });
+                if (response.ok) {
+                    updateQueueStatus();
+                }
+            } catch (error) {
+                console.error('Error resuming download:', error);
+            }
+        }
+        
+        async function cancelQueueDownload(downloadId) {
+            try {
+                const response = await fetch(`/queue/cancel/${downloadId}`, { method: 'POST' });
+                if (response.ok) {
+                    updateQueueStatus();
+                }
+            } catch (error) {
+                console.error('Error cancelling download:', error);
+            }
+        }
+        
+        async function redownload(downloadId) {
+            try {
+                const response = await fetch(`/queue/redownload/${downloadId}`, { method: 'POST' });
+                if (response.ok) {
+                    updateQueueStatus();
+                }
+            } catch (error) {
+                console.error('Error re-downloading:', error);
+            }
+        }
+        
+        function showHistory() {
+            // TODO: Implement history modal
+            alert('History feature coming soon!');
+        }
+        
+        // Start polling queue status on page load
+        updateQueueStatus();
+        setInterval(updateQueueStatus, 5000); // Update every 5 seconds even when sidebar is closed
+        
+        // Check for FFmpeg on page load
+        fetch('/check_ffmpeg')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.has_ffmpeg) {
+                    document.getElementById('ffmpeg-warning').style.display = 'block';
+                    document.getElementById('ffmpeg-message').textContent = data.message;
+                }
+            });
+        
+        // Preview functionality
+        let previewTimeout;
+        let lastPreviewUrl = '';
+        let previewCache = new Map();
+        
+        document.getElementById('url').addEventListener('input', async (e) => {
+            const url = e.target.value.trim();
+            
+            // Clear previous timeout
+            clearTimeout(previewTimeout);
+            
+            // Hide preview if URL is empty
+            if (!url) {
+                document.getElementById('preview-container').style.display = 'none';
+                document.getElementById('playlist-options').style.display = 'none';
+                lastPreviewUrl = '';
+                return;
+            }
+            
+            // Show playlist options if URL contains playlist
+            if (url.includes('playlist') || url.includes('list=')) {
+                document.getElementById('playlist-options').style.display = 'block';
+            } else {
+                document.getElementById('playlist-options').style.display = 'none';
+            }
+            
+            // Skip if same URL
+            if (url === lastPreviewUrl) {
+                return;
+            }
+            
+            // Debounce preview request with longer delay
+            previewTimeout = setTimeout(async () => {
+                if (url.startsWith('http://') || url.startsWith('https://')) {
+                    // Check cache first
+                    const cacheKey = url;
+                    const cached = previewCache.get(cacheKey);
+                    if (cached && Date.now() - cached.timestamp < 60000) {
+                        // Use cached data if less than 1 minute old
+                        currentPreviewData = cached.data;
+                        currentPreviewPage = 1;
+                        showPreview(cached.data, 1);
+                        lastPreviewUrl = url;
+                        return;
+                    }
+                    // Show loading spinner
+                    document.getElementById('preview-container').style.display = 'block';
+                    document.getElementById('preview-loading').style.display = 'block';
+                    document.getElementById('preview-content').style.display = 'none';
+                    
+                    try {
+                        const playlistLimitValue = document.getElementById('playlist-limit').value.trim();
+                        const playlistLimit = playlistLimitValue ? parseInt(playlistLimitValue) : null;
+                        
+                        const response = await fetch('/preview', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                url,
+                                page: 1,
+                                playlist_limit: playlistLimit
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            const preview = await response.json();
+                            // Cache the result
+                            previewCache.set(cacheKey, {
+                                data: preview,
+                                timestamp: Date.now()
+                            });
+                            // Clean old cache entries
+                            if (previewCache.size > 10) {
+                                const firstKey = previewCache.keys().next().value;
+                                previewCache.delete(firstKey);
+                            }
+                            currentPreviewData = preview;
+                            currentPreviewPage = 1;
+                            showPreview(preview, 1);
+                            lastPreviewUrl = url;
+                        } else {
+                            document.getElementById('preview-container').style.display = 'none';
+                        }
+                    } catch (error) {
+                        console.error('Preview error:', error);
+                        document.getElementById('preview-container').style.display = 'none';
+                    } finally {
+                        document.getElementById('preview-loading').style.display = 'none';
+                    }
+                }
+            }, 1500); // Wait 1.5 seconds after user stops typing
+        });
+        
+        function formatDuration(seconds) {
+            if (!seconds) return '';
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            if (hours > 0) {
+                return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // Store current preview data and page for pagination
+        let currentPreviewData = null;
+        let currentPreviewPage = 1;
+        
+        // Store download status for playlist items
+        let playlistItemStatus = new Map();
+        
+        function showPreview(preview, page = 1) {
+            const container = document.getElementById('preview-container');
+            const content = document.getElementById('preview-content');
+            
+            container.style.display = 'block';
+            content.style.display = 'block';
+            
+            if (preview.type === 'video') {
+                content.innerHTML = `
+                    <div class="video-preview">
+                        ${preview.thumbnail ? `
+                            <div class="preview-thumbnail">
+                                <img src="${preview.thumbnail}" alt="Thumbnail">
+                                <div class="duration-badge">${formatDuration(preview.duration)}</div>
+                            </div>
+                        ` : ''}
+                        <div class="preview-details">
+                            <h4>${preview.title}</h4>
+                            ${preview.artist !== 'Unknown' ? `<p class="preview-artist">${preview.artist}</p>` : ''}
+                            ${preview.album ? `<p class="preview-album">${preview.album}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+            } else if (preview.type === 'playlist') {
+                let entriesHtml = '<div class="playlist-items">';
+                preview.entries.forEach((entry) => {
+                    // Check if we have a stored status for this item
+                    const storedStatus = playlistItemStatus.get(entry.index) || 'pending';
+                    entriesHtml += `
+                        <div class="playlist-item" id="preview-item-${entry.index}">
+                            <span class="item-number">${entry.index}</span>
+                            <div class="item-info">
+                                <p class="item-title">${entry.title}</p>
+                                <p class="item-meta">${entry.uploader} • ${formatDuration(entry.duration)}</p>
+                            </div>
+                            <span class="item-status status-${storedStatus}">${getStatusIcon(storedStatus, entry.index)}</span>
+                        </div>
+                    `;
+                });
+                entriesHtml += '</div>';
+                
+                // Create pagination controls
+                let paginationHtml = '';
+                if (preview.total_pages > 1) {
+                    paginationHtml = '<div class="pagination">';
+                    if (preview.has_prev) {
+                        paginationHtml += `<button class="pagination-btn" onclick="loadPreviewPage(${page - 1})">← Previous</button>`;
+                    }
+                    paginationHtml += `<span class="pagination-info">Page ${page} of ${preview.total_pages}</span>`;
+                    if (preview.has_next) {
+                        paginationHtml += `<button class="pagination-btn" onclick="loadPreviewPage(${page + 1})">Next →</button>`;
+                    }
+                    paginationHtml += '</div>';
+                }
+                
+                const downloadInfo = preview.download_count < preview.total_videos ? 
+                    `<div class="download-info-banner">Will download ${preview.download_count} of ${preview.total_videos} videos</div>` : '';
+                
+                content.innerHTML = `
+                    <div class="playlist-preview">
+                        <div class="playlist-header">
+                            <h4>${preview.title}</h4>
+                            <span class="video-count">${preview.total_videos} videos</span>
+                        </div>
+                        ${downloadInfo}
+                        ${entriesHtml}
+                        ${paginationHtml}
+                    </div>
+                `;
+            }
+        }
+        
+        // Function to load a specific page of playlist preview
+        async function loadPreviewPage(page) {
+            if (!currentPreviewData) return;
+            
+            const url = document.getElementById('url').value.trim();
+            const playlistLimitValue = document.getElementById('playlist-limit').value.trim();
+            const playlistLimit = playlistLimitValue ? parseInt(playlistLimitValue) : null;
+            
+            // Show loading overlay on preview content
+            const previewContent = document.getElementById('preview-content');
+            const originalContent = previewContent.innerHTML;
+            previewContent.style.opacity = '0.5';
+            previewContent.style.pointerEvents = 'none';
+            
+            // Create inline loading indicator
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100;';
+            loadingOverlay.innerHTML = '<div class="spinner"></div>';
+            document.getElementById('preview-container').style.position = 'relative';
+            document.getElementById('preview-container').appendChild(loadingOverlay);
+            
+            try {
+                const response = await fetch('/preview', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        url, 
+                        page, 
+                        playlist_limit: playlistLimit 
+                    })
+                });
+                
+                if (response.ok) {
+                    const preview = await response.json();
+                    currentPreviewData = preview;
+                    currentPreviewPage = page;
+                    showPreview(preview, page);
+                }
+            } catch (error) {
+                console.error('Preview page load error:', error);
+                previewContent.innerHTML = originalContent;
+            } finally {
+                // Remove loading overlay and restore content
+                if (loadingOverlay.parentNode) {
+                    loadingOverlay.parentNode.removeChild(loadingOverlay);
+                }
+                previewContent.style.opacity = '1';
+                previewContent.style.pointerEvents = 'auto';
+            }
+        }
+        
+        // Format selector functionality
+        document.querySelectorAll('.format-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.format-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-pressed', 'false');
+                });
+                this.classList.add('active');
+                this.setAttribute('aria-pressed', 'true');
+                document.querySelector('input[name="format"]').value = this.dataset.format;
+            });
+        });
+        
+        // Advanced options toggle
+        // toggleAdvanced removed - no longer needed for web hosting
+        
+        // Listen for playlist limit changes to update preview
+        let playlistLimitTimeout;
+        document.getElementById('playlist-limit').addEventListener('input', () => {
+            clearTimeout(playlistLimitTimeout);
+            playlistLimitTimeout = setTimeout(() => {
+                // If there's a current preview, refresh it
+                const url = document.getElementById('url').value.trim();
+                if (url && currentPreviewData && currentPreviewData.type === 'playlist') {
+                    // Trigger a preview refresh by simulating input change
+                    document.getElementById('url').dispatchEvent(new Event('input'));
+                }
+            }, 500); // Wait 500ms after user stops typing
+        });
+        
+        // Paste from clipboard
+        async function pasteFromClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('url').value = text;
+                document.getElementById('url').dispatchEvent(new Event('input'));
+            } catch (err) {
+                console.error('Failed to read clipboard:', err);
+            }
+        }
+        
+        // Clear URL input
+        function clearUrlInput() {
+            document.getElementById('url').value = '';
+            document.getElementById('url').dispatchEvent(new Event('input'));
+            document.getElementById('url').focus();
+        }
+        
+        // Show/hide clear button based on input content
+        document.getElementById('url').addEventListener('input', (e) => {
+            const clearBtn = document.querySelector('.clear-btn');
+            if (e.target.value.trim()) {
+                clearBtn.style.display = 'flex';
+            } else {
+                clearBtn.style.display = 'none';
+            }
+        });
+        
+        // Store current download ID
+        let currentDownloadId = null;
+        
+        // Store last failed download info for retry
+        let lastFailedDownload = null;
+        
+        // Store failed downloads during playlist processing
+        let failedDownloads = [];
+        
+        // Flag to track if we need to update progress after error
+        let needsProgressUpdate = false;
+        
+        // Store current download ID for linking files
+        let currentPlaylistDownloadId = null;
+        
+        // Store completed files for playlist downloads
+        let completedFiles = [];
+        
+        // Get status icon HTML
+        function getStatusIcon(status, fileIndex = null) {
+            switch (status) {
+                case 'pending':
+                    return '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" opacity="0.3"/></svg>';
+                case 'downloading':
+                    return '<svg class="spinner-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" stroke-dasharray="50.27" stroke-dashoffset="25.13"/></svg>';
+                case 'completed':
+                    if (currentPlaylistDownloadId && fileIndex !== null) {
+                        return `<a href="/download/${currentPlaylistDownloadId}/${fileIndex - 1}" class="download-link" title="Download this file">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <circle cx="10" cy="10" r="8" fill="#10B981"/>
+                                <path d="M10 6V12M10 12L7 9M10 12L13 9" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </a>`;
+                    }
+                    return '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" fill="#10B981"/><path d="M6 10L9 13L14 7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                case 'failed':
+                    return '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" fill="#EF4444"/><path d="M7 7L13 13M13 7L7 13" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>';
+                default:
+                    return '';
+            }
+        }
+        
+        // Update preview item status
+        function updatePreviewItemStatus(index, status) {
+            // Store the status in our map
+            playlistItemStatus.set(index, status);
+            
+            // Update the UI if the item is currently visible
+            const item = document.getElementById(`preview-item-${index}`);
+            if (!item) return;
+            
+            const statusSpan = item.querySelector('.item-status');
+            if (statusSpan) {
+                statusSpan.className = `item-status status-${status}`;
+                statusSpan.innerHTML = getStatusIcon(status, index);
+            }
+        }
+        
+        // Add completed file to the list
+        function addCompletedFile(fileInfo) {
+            const filesSection = document.getElementById('completed-files-section');
+            const filesList = document.getElementById('completed-files-list');
+            
+            // Show the section if hidden
+            if (filesSection.style.display === 'none') {
+                filesSection.style.display = 'block';
+            }
+            
+            // Create file item element
+            const fileItem = document.createElement('div');
+            fileItem.className = 'completed-file-item';
+            fileItem.id = `completed-file-${fileInfo.index}`;
+            
+            const fileSize = (fileInfo.size / 1024 / 1024).toFixed(2);
+            
+            fileItem.innerHTML = `
+                <div class="file-info">
+                    <div class="file-title">${fileInfo.title}</div>
+                    <div class="file-meta">${fileInfo.artist} • ${fileSize} MB</div>
+                </div>
+                <div class="file-actions">
+                    <button class="download-file-btn" onclick="downloadFile('${currentPlaylistDownloadId}', ${fileInfo.index - 1})">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 2V10M8 10L5 7M8 10L11 7M2 10V13C2 13.5523 2.44772 14 3 14H13C13.5523 14 14 13.5523 14 13V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Download
+                    </button>
+                </div>
+            `;
+            
+            filesList.appendChild(fileItem);
+            completedFiles.push(fileInfo);
+        }
+        
+        // Download individual file
+        function downloadFile(downloadId, fileIndex) {
+            window.location.href = `/download/${downloadId}/${fileIndex}`;
+            
+            // Mark button as downloaded
+            setTimeout(() => {
+                const btn = document.querySelector(`#completed-file-${fileIndex + 1} .download-file-btn`);
+                if (btn) {
+                    btn.classList.add('downloaded');
+                    btn.innerHTML = `
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M5 8L7 10L11 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Downloaded
+                    `;
+                }
+            }, 1000);
+        }
+        
+        // Download all completed files
+        function downloadAllCompleted() {
+            if (currentPlaylistDownloadId) {
+                window.location.href = `/download/${currentPlaylistDownloadId}`;
+            }
+        }
+        
+        // Cancel download
+        async function cancelDownload() {
+            if (!currentDownloadId) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/cancel/${currentDownloadId}`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    console.log('Download cancelled successfully');
+                    // Hide cancel button
+                    document.querySelector('.cancel-btn').style.display = 'none';
+                } else {
+                    const data = await response.json();
+                    console.error('Failed to cancel download:', data.error);
+                }
+            } catch (error) {
+                console.error('Error cancelling download:', error);
+            }
+        }
+        
+        async function startDownload() {
+            console.log('Download button clicked!');
+            
+            // Clear status map and completed files for new download
+            playlistItemStatus.clear();
+            completedFiles = [];
+            document.getElementById('completed-files-list').innerHTML = '';
+            document.getElementById('completed-files-section').style.display = 'none';
+            
+            const url = document.getElementById('url').value.trim();
+            const format = document.querySelector('input[name="format"]').value;
+            const directory = ''; // Removed for web hosting
+            const playlistLimitValue = document.getElementById('playlist-limit').value.trim();
+            const playlistLimit = playlistLimitValue ? parseInt(playlistLimitValue) : null;
+            
+            // Validate URL
+            if (!url) {
+                showError('Please enter a YouTube URL');
+                return;
+            }
+            
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                showError('Please enter a valid URL starting with http:// or https://');
+                return;
+            }
+            
+            console.log('Download params:', { url, format, directory, playlistLimit });
+            
+            // Show immediate feedback
+            const downloadBtn = document.getElementById('download-btn');
+            const originalText = downloadBtn.querySelector('span').textContent;
+            downloadBtn.querySelector('span').textContent = 'Adding to queue...';
+            // Don't disable the button - allow multiple downloads
+            
+            // Reset UI
+            document.getElementById('error-container').style.display = 'none';
+            document.getElementById('progress-container').style.display = 'block';
+            document.getElementById('status-text').textContent = 'Starting download...';
+            document.getElementById('progress-fill').style.width = '0%';
+            document.getElementById('progress-fill').classList.remove('active');
+            document.getElementById('progress-percentage').textContent = '0%';
+            document.getElementById('progress-details').textContent = '';
+            document.getElementById('download-ready').style.display = 'none';
+            document.getElementById('download-ready').innerHTML = '';
+            
+            // Reset failed downloads array for new download
+            failedDownloads = [];
+            needsProgressUpdate = false;
+            
+            performDownload(url, format, directory, playlistLimit, downloadBtn, originalText);
+        }
+        
+        function showError(message, canRetry = false) {
+            document.getElementById('error-container').style.display = 'flex';
+            document.getElementById('error-message').textContent = message;
+            
+            // Show/hide retry button based on whether it's retryable
+            const retryBtn = document.querySelector('.retry-btn');
+            retryBtn.style.display = canRetry ? 'flex' : 'none';
+        }
+        
+        // Directory error function removed for web hosting
+        
+        // Directory error clearing removed for web hosting
+        
+        // Retry failed download
+        function retryDownload() {
+            if (!lastFailedDownload) {
+                console.error('No failed download to retry');
+                return;
+            }
+            
+            // Hide error and restore URL
+            document.getElementById('error-container').style.display = 'none';
+            document.getElementById('url').value = lastFailedDownload.url;
+            
+            // Restore format selection
+            document.querySelector('input[name="format"]').value = lastFailedDownload.format;
+            document.querySelectorAll('.format-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.format === lastFailedDownload.format);
+            });
+            
+            // Directory restore removed for web hosting
+            document.getElementById('playlist-limit').value = lastFailedDownload.playlistLimit;
+            
+            // Clear the failed download info
+            lastFailedDownload = null;
+            
+            // Start the download again
+            startDownload();
+        }
+        
+        async function performDownload(url, format, directory, playlistLimit, downloadBtn, originalText) {
+            try {
+                // First connect EventSource
+                const tempId = Date.now().toString();
+                console.log('Pre-connecting EventSource...');
+                const eventSource = new EventSource(`/progress/${tempId}`);
+                
+                // Wait for connection
+                await new Promise((resolve) => {
+                    eventSource.onopen = () => {
+                        console.log('EventSource pre-connected');
+                        eventSource.close();
+                        resolve();
+                    };
+                    // Timeout after 2 seconds
+                    setTimeout(resolve, 2000);
+                });
+                
+                // Now start the actual download
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url, format, directory, playlist_limit: playlistLimit })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    // Handle directory validation errors specifically
+                    if (data.error && data.error.includes('Directory')) {
+                        // Show directory error near the input field
+                        showDirectoryError(data.error);
+                        // Also show in main error container
+                        throw new Error(data.error);
+                    }
+                    throw new Error(data.error || 'Download failed');
+                }
+                
+                // Store download ID for later use
+                const downloadId = data.download_id;
+                currentDownloadId = downloadId;  // Store globally for cancellation
+                currentPlaylistDownloadId = downloadId; // Store for file download links
+                
+                // Reset button text immediately after adding to queue
+                downloadBtn.querySelector('span').textContent = originalText;
+                
+                // Clear the URL input for next download
+                document.getElementById('url').value = '';
+                document.getElementById('url').dispatchEvent(new Event('input'));
+                
+                // Show success message briefly
+                document.getElementById('status-text').textContent = 'Added to download queue!';
+                
+                // Show cancel button for this download
+                document.querySelector('.cancel-btn').style.display = 'flex';
+                
+                // Start listening for progress updates
+                console.log('Starting EventSource connection for download:', downloadId);
+                const realEventSource = new EventSource(`/progress/${downloadId}`);
+                
+                // Set up periodic check for download completion (backup for EventSource)
+                let completionCheckInterval = setInterval(async () => {
+                    try {
+                        const queueResponse = await fetch('/queue/status');
+                        const queueData = await queueResponse.json();
+                        
+                        // Check if download is completed
+                        if (queueData.completed && queueData.completed[downloadId]) {
+                            clearInterval(completionCheckInterval);
+                            // Trigger completion if not already triggered
+                            const currentStatus = document.getElementById('status-text').textContent;
+                            if (!currentStatus.includes('completed') && !currentStatus.includes('Playlist download completed')) {
+                                console.log('Download completed detected via queue check');
+                                // Close EventSource if still open
+                                if (realEventSource.readyState !== EventSource.CLOSED) {
+                                    realEventSource.close();
+                                }
+                                // Don't change button state - allow new downloads
+                                // downloadBtn.querySelector('span').textContent = originalText;
+                                // downloadBtn.disabled = false;
+                                document.querySelector('.cancel-btn').style.display = 'none';
+                                currentDownloadId = null;
+                                
+                                // Update UI to show completion
+                                document.getElementById('status-text').textContent = 'Download completed - check queue for details';
+                                document.getElementById('progress-fill').style.width = '100%';
+                                document.getElementById('progress-percentage').textContent = '100%';
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error checking completion status:', error);
+                    }
+                }, 5000); // Check every 5 seconds
+                
+                realEventSource.onopen = () => {
+                    console.log('EventSource connected');
+                };
+                
+                realEventSource.onerror = (error) => {
+                    console.error('EventSource error:', error);
+                };
+                
+                realEventSource.onmessage = (event) => {
+                    console.log('Progress event:', event.data);  // Debug log
+                    const progress = JSON.parse(event.data);
+                    
+                    if (progress.status === 'heartbeat') {
+                        return;
+                    }
+                    
+                    if (progress.status === 'playlist_info') {
+                        document.getElementById('status-text').textContent = 
+                            `Found playlist: ${progress.playlist_title} (${progress.total_videos} videos)`;
+                    } else if (progress.status === 'starting') {
+                        let infoText = `Downloading: ${progress.title}`;
+                        if (progress.artist && progress.artist !== 'Unknown Artist') {
+                            infoText = `Downloading: ${progress.artist} - ${progress.title}`;
+                        }
+                        if (progress.album) {
+                            infoText += ` (${progress.album})`;
+                        }
+                        if (progress.playlist_index && progress.playlist_total) {
+                            infoText = `[${progress.playlist_index}/${progress.playlist_total}] ${infoText}`;
+                            // Add failed count if any
+                            if (failedDownloads.length > 0) {
+                                infoText += ` - ${failedDownloads.length} failed`;
+                            }
+                        }
+                        document.getElementById('status-text').textContent = infoText;
+                        // Add active class for animation
+                        document.getElementById('progress-fill').classList.add('active');
+                        
+                        // Update preview item if it's part of a playlist
+                        if (progress.playlist_index && progress.playlist_total) {
+                            updatePreviewItemStatus(progress.playlist_index, 'downloading');
+                            
+                            // If we need to update progress after an error, do it now
+                            if (needsProgressUpdate) {
+                                const baseProgress = ((progress.playlist_index - 1) * 100) / progress.playlist_total;
+                                document.getElementById('progress-fill').style.width = baseProgress + '%';
+                                document.getElementById('progress-percentage').textContent = Math.round(baseProgress) + '%';
+                                needsProgressUpdate = false;
+                            }
+                        }
+                    } else if (progress.status === 'downloading') {
+                        document.getElementById('status-text').textContent = 'Downloading...';
+                        if (progress.percent !== 'N/A') {
+                            let percentValue;
+                            // For playlist downloads, calculate smooth overall progress
+                            if (progress.playlist_index && progress.playlist_total) {
+                                const fileProgress = parseFloat(progress.percent.replace('%', ''));
+                                // Calculate overall progress more smoothly
+                                const completedVideos = progress.playlist_index - 1;
+                                const currentVideoProgress = fileProgress / 100;
+                                percentValue = ((completedVideos + currentVideoProgress) / progress.playlist_total) * 100;
+                                
+                                document.getElementById('progress-fill').style.width = percentValue + '%';
+                                document.getElementById('progress-percentage').textContent = Math.round(percentValue) + '%';
+                                
+                                // Show which video is being downloaded
+                                let statusText = `Downloading video ${progress.playlist_index} of ${progress.playlist_total}...`;
+                                if (failedDownloads.length > 0) {
+                                    statusText += ` (${failedDownloads.length} failed)`;
+                                }
+                                document.getElementById('status-text').textContent = statusText;
+                            } else {
+                                document.getElementById('progress-fill').style.width = progress.percent;
+                                document.getElementById('progress-percentage').textContent = progress.percent;
+                            }
+                        }
+                        document.getElementById('progress-details').textContent = 
+                            `Speed: ${progress.speed} | ETA: ${progress.eta}`;
+                    } else if (progress.status === 'finished') {
+                        document.getElementById('status-text').textContent = 'Processing...';
+                        if (progress.playlist_index && progress.playlist_total) {
+                            // Calculate smooth progress for playlists
+                            const baseProgress = ((progress.playlist_index - 1) * 100) / progress.playlist_total;
+                            const itemProgress = 100 / progress.playlist_total;
+                            const overallProgress = baseProgress + (itemProgress * 0.9); // 90% when item finishes
+                            
+                            document.getElementById('progress-fill').style.width = overallProgress + '%';
+                            document.getElementById('progress-percentage').textContent = Math.round(overallProgress) + '%';
+                            
+                            // Mark the preview item as completed
+                            updatePreviewItemStatus(progress.playlist_index, 'completed');
+                        } else {
+                            document.getElementById('progress-fill').style.width = '90%';
+                            document.getElementById('progress-percentage').textContent = '90%';
+                        }
+                    } else if (progress.status === 'file_completed') {
+                        // A file in the playlist has completed
+                        if (progress.file_info && progress.playlist_index) {
+                            addCompletedFile({
+                                ...progress.file_info,
+                                index: progress.playlist_index
+                            });
+                        }
+                    } else if (progress.status === 'completed') {
+                        let completedText = `Processing completed`;
+                        document.getElementById('status-text').textContent = completedText;
+                        document.getElementById('progress-fill').style.width = '100%';
+                        document.getElementById('progress-percentage').textContent = '100%';
+                        document.getElementById('progress-details').textContent = 'Ready for download';
+                        // Remove active animation
+                        document.getElementById('progress-fill').classList.remove('active');
+                        
+                        // Show download button
+                        document.getElementById('download-ready').style.display = 'block';
+                        const fileSize = (progress.size / 1024 / 1024).toFixed(2);
+                        
+                        // Build file info display
+                        let fileInfo = '';
+                        if (progress.artist && progress.artist !== 'Unknown Artist') {
+                            fileInfo += `<strong>Artist:</strong> ${progress.artist}<br>`;
+                        }
+                        fileInfo += `<strong>Title:</strong> ${progress.title}<br>`;
+                        if (progress.album) {
+                            fileInfo += `<strong>Album:</strong> ${progress.album}<br>`;
+                        }
+                        fileInfo += `<strong>File:</strong> ${progress.filename} (${fileSize} MB)`;
+                        
+                        document.getElementById('download-info').innerHTML = fileInfo;
+                        
+                        // Set up download button for browser download
+                        document.getElementById('browser-download-btn').textContent = 'Download File';
+                        document.getElementById('browser-download-btn').onclick = async () => {
+                            window.location.href = `/download/${progress.download_id}`;
+                        };
+                        
+                        realEventSource.close();
+                        // Don't change button state - allow new downloads
+                        // downloadBtn.querySelector('span').textContent = originalText;
+                        // downloadBtn.disabled = false;
+                        document.querySelector('.cancel-btn').style.display = 'none';
+                        currentDownloadId = null;
+                        currentPlaylistDownloadId = null;
+                    } else if (progress.status === 'playlist_completed') {
+                        const successCount = progress.total_files;
+                        const failedCount = failedDownloads.length;
+                        const totalAttempted = successCount + failedCount;
+                        
+                        document.getElementById('status-text').textContent = 
+                            `Playlist download completed: ${successCount} of ${totalAttempted} files`;
+                        document.getElementById('progress-fill').style.width = '100%';
+                        document.getElementById('progress-percentage').textContent = '100%';
+                        document.getElementById('progress-details').textContent = 
+                            `Total size: ${(progress.total_size / 1024 / 1024).toFixed(2)} MB`;
+                        // Remove active animation
+                        document.getElementById('progress-fill').classList.remove('active');
+                        
+                        // Show message about downloads
+                        document.getElementById('download-ready').style.display = 'block';
+                        
+                        let infoHtml = `<p><strong>Downloaded ${successCount} files from playlist "${progress.playlist_title}"</strong></p>
+                                       <p>Total size: ${(progress.total_size / 1024 / 1024).toFixed(2)} MB</p>`;
+                        
+                        // Show failed downloads if any
+                        if (failedCount > 0) {
+                            infoHtml += `<div style="margin-top: 1rem; padding: 1rem; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid var(--error);">
+                                        <p style="color: var(--error); font-weight: 600; margin-bottom: 0.5rem;">⚠️ ${failedCount} downloads failed:</p>
+                                        <ul style="margin: 0; padding-left: 1.5rem; font-size: 0.875rem;">`;
+                            
+                            failedDownloads.forEach(failed => {
+                                // Extract just the video title from the error message
+                                const match = failed.message.match(/Failed to download video \d+: (.+?)\. Error:/);
+                                const videoTitle = match ? match[1] : `Video ${failed.index}`;
+                                const errorReason = failed.message.includes('Video unavailable') ? 'Video unavailable' : 'Download error';
+                                infoHtml += `<li>${videoTitle} - ${errorReason}</li>`;
+                            });
+                            
+                            infoHtml += `</ul></div>`;
+                        }
+                        
+                        // Add download options
+                        infoHtml += `<div style="margin-top: 1rem; text-align: center;">
+                                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.5rem;">
+                                        Individual files can be downloaded from the list above
+                                    </p>
+                                    </div>`;
+                        
+                        document.getElementById('download-info').innerHTML = infoHtml;
+                        
+                        // Enable download button for ZIP file
+                        document.getElementById('browser-download-btn').textContent = 'Download All as ZIP';
+                        document.getElementById('browser-download-btn').onclick = async () => {
+                            window.location.href = `/download/${progress.download_id}`;
+                        };
+                        
+                        realEventSource.close();
+                        // Don't change button state - allow new downloads
+                        // downloadBtn.querySelector('span').textContent = originalText;
+                        // downloadBtn.disabled = false;
+                        document.querySelector('.cancel-btn').style.display = 'none';
+                        currentDownloadId = null;
+                        currentPlaylistDownloadId = null;
+                    } else if (progress.status === 'cancelled') {
+                        document.getElementById('status-text').textContent = 'Download cancelled';
+                        document.getElementById('progress-details').textContent = '';
+                        document.querySelector('.cancel-btn').style.display = 'none';
+                        document.getElementById('progress-fill').classList.remove('active');
+                        realEventSource.close();
+                        // Don't change button state - allow new downloads
+                        // downloadBtn.querySelector('span').textContent = originalText;
+                        // downloadBtn.disabled = false;
+                        document.querySelector('.cancel-btn').style.display = 'none';
+                        currentDownloadId = null;
+                        currentPlaylistDownloadId = null;
+                        // Show a message
+                        setTimeout(() => {
+                            document.getElementById('progress-container').style.display = 'none';
+                        }, 2000);
+                    } else if (progress.status === 'error') {
+                        // For playlist downloads, show error but continue
+                        if (progress.playlist_index && progress.playlist_total) {
+                            // Store the failed download
+                            failedDownloads.push({
+                                index: progress.playlist_index,
+                                message: progress.message
+                            });
+                            
+                            // Mark the preview item as failed
+                            updatePreviewItemStatus(progress.playlist_index, 'failed');
+                            
+                            // Show inline error notification without disrupting progress
+                            const statusText = document.getElementById('status-text');
+                            const originalStatus = statusText.textContent;
+                            
+                            // Show error briefly
+                            statusText.innerHTML = `<span style="color: var(--error);">⚠️ ${progress.message}</span>`;
+                            
+                            // Update progress bar to show we're continuing
+                            // Use (index - 1) to show completed videos, not current
+                            const baseProgress = ((progress.playlist_index - 1) * 100) / progress.playlist_total;
+                            document.getElementById('progress-fill').style.width = baseProgress + '%';
+                            document.getElementById('progress-percentage').textContent = Math.round(baseProgress) + '%';
+                            
+                            // Set flag to ensure next video updates progress
+                            needsProgressUpdate = true;
+                            
+                            // Clear the error message after 3 seconds and show next item progress
+                            setTimeout(() => {
+                                statusText.textContent = `Continuing playlist download... (${failedDownloads.length} failed)`;
+                            }, 3000);
+                            
+                            // Continue listening for more progress updates - DO NOT throw error or close connection
+                        } else {
+                            // Store failed download info for retry
+                            lastFailedDownload = { url, format, directory, playlistLimit };
+                            throw new Error(progress.message);
+                        }
+                    }
+                };
+                
+                realEventSource.onerror = (error) => {
+                    console.error('EventSource error occurred:', error);
+                    // Don't immediately close on error - might just be a temporary issue
+                    // Only close if we're not in the middle of a playlist download
+                    const statusText = document.getElementById('status-text').textContent;
+                    if (!statusText.includes('Downloading video') && !statusText.includes('Processing playlist')) {
+                        realEventSource.close();
+                        // Don't change button state - allow new downloads
+                        // downloadBtn.querySelector('span').textContent = originalText;
+                        // downloadBtn.disabled = false;
+                        document.querySelector('.cancel-btn').style.display = 'none';
+                        currentDownloadId = null;
+                        currentPlaylistDownloadId = null;
+                        if (!statusText.includes('completed')) {
+                            throw new Error('Connection lost');
+                        }
+                    }
+                };
+                
+            } catch (error) {
+                // Store failed download info for retry
+                lastFailedDownload = { url, format, directory, playlistLimit };
+                
+                // Show error with retry option
+                showError(`Error: ${error.message}`, true);
+                document.getElementById('progress-container').style.display = 'none';
+                // Reset button text but don't disable - allow new downloads
+                downloadBtn.querySelector('span').textContent = originalText;
+                // downloadBtn.disabled = false;
+                document.querySelector('.cancel-btn').style.display = 'none';
+                currentDownloadId = null;
+            }
+        }
+    </script>
+</body>
+</html>

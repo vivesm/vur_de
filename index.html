@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vur-De - YouTube Downloader</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <div class="main-content">
+            <div class="logo-section">
+                <h1>🎬 Vur-De</h1>
+                <p class="tagline">Download YouTube videos & music locally</p>
+            </div>
+
+            <div class="download-card">
+                <input type="text" id="url-input" placeholder="Paste YouTube URL here..." class="url-input">
+
+                <div class="format-selector">
+                    <button class="format-btn active" data-format="audio" onclick="selectFormat('audio')">
+                        🎵 Audio (MP3)
+                    </button>
+                    <button class="format-btn" data-format="video" onclick="selectFormat('video')">
+                        🎬 Video (MP4)
+                    </button>
+                </div>
+
+                <button class="download-btn" onclick="startDownload()">
+                    ⬇️ Download
+                </button>
+            </div>
+
+            <div id="progress-container" style="display: none;">
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <p id="status-text">Starting download...</p>
+            </div>
+
+            <div id="error-container" style="display: none;">
+                <p id="error-text"></p>
+            </div>
+        </div>
+    </div>
+    <script src="renderer.js"></script>
+</body>
+</html>
