@@ -45,4 +45,6 @@ Thumbs.db
 
 # Environment variables
 .env
-EOF < /dev/null
+
+# Claude-specific files
+CLAUDE.md

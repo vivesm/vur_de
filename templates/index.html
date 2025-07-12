@@ -154,28 +154,11 @@
                 
                 <input type="hidden" name="format" value="audio">
                 
-                <div class="advanced-options">
-                    <button type="button" class="advanced-toggle" onclick="toggleAdvanced()">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                            <path d="M10.7071 4.29289C10.3166 3.90237 9.68342 3.90237 9.29289 4.29289L3.29289 10.2929C2.90237 10.6834 2.90237 11.3166 3.29289 11.7071L9.29289 17.7071C9.68342 18.0976 10.3166 18.0976 10.7071 17.7071C11.0976 17.3166 11.0976 16.6834 10.7071 16.2929L5.41421 11L17 11C17.5523 11 18 10.5523 18 10C18 9.44772 17.5523 9 17 9L5.41421 9L10.7071 3.70711C11.0976 3.31658 11.0976 2.68342 10.7071 2.29289Z" fill="currentColor" transform="rotate(90 10 10)"/>
-                        </svg>
-                        <span>Advanced Options</span>
-                    </button>
-                    
-                    <div class="advanced-content" style="display: none;">
-                        <div class="form-group">
-                            <label for="directory">Custom Download Directory</label>
-                            <input type="text" id="directory" name="directory" placeholder="/path/to/folder" value="/Volumes/MUSIC">
-                            <div id="directory-error" class="field-error" style="display: none;"></div>
-                        </div>
-                        
-                        <div class="form-group playlist-options" id="playlist-options" style="display: none;">
-                            <label for="playlist-limit">Playlist Download Limit (leave empty for all)</label>
-                            <div class="playlist-limit-input">
-                                <input type="number" id="playlist-limit" name="playlist_limit" placeholder="Unlimited" min="1">
-                                <span class="limit-label">videos</span>
-                            </div>
-                        </div>
+                <div class="form-group playlist-options" id="playlist-options" style="display: none;">
+                    <label for="playlist-limit">Playlist Download Limit (leave empty for all)</label>
+                    <div class="playlist-limit-input">
+                        <input type="number" id="playlist-limit" name="playlist_limit" placeholder="Unlimited" min="1">
+                        <span class="limit-label">videos</span>
                     </div>
                 </div>
                 
@@ -222,6 +205,24 @@
                         </svg>
                         <span>Save to Computer</span>
                     </button>
+                </div>
+            </div>
+            
+            <!-- Completed Files Section for Playlists -->
+            <div id="completed-files-section" class="completed-files-section" style="display: none;">
+                <div class="completed-files-header">
+                    <h3>Completed Files</h3>
+                    <div class="bulk-actions">
+                        <button class="action-btn secondary" onclick="downloadAllCompleted()">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M8 2V10M8 10L5 7M8 10L11 7M2 10V13C2 13.5523 2.44772 14 3 14H13C13.5523 14 14 13.5523 14 13V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span>Download All</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="completed-files-list" class="completed-files-list">
+                    <!-- Files will be added here dynamically -->
                 </div>
             </div>
             
@@ -606,6 +607,9 @@
         let currentPreviewData = null;
         let currentPreviewPage = 1;
         
+        // Store download status for playlist items
+        let playlistItemStatus = new Map();
+        
         function showPreview(preview, page = 1) {
             const container = document.getElementById('preview-container');
             const content = document.getElementById('preview-content');
@@ -632,6 +636,8 @@
             } else if (preview.type === 'playlist') {
                 let entriesHtml = '<div class="playlist-items">';
                 preview.entries.forEach((entry) => {
+                    // Check if we have a stored status for this item
+                    const storedStatus = playlistItemStatus.get(entry.index) || 'pending';
                     entriesHtml += `
                         <div class="playlist-item" id="preview-item-${entry.index}">
                             <span class="item-number">${entry.index}</span>
@@ -639,7 +645,7 @@
                                 <p class="item-title">${entry.title}</p>
                                 <p class="item-meta">${entry.uploader} • ${formatDuration(entry.duration)}</p>
                             </div>
-                            <span class="item-status status-pending">${getStatusIcon('pending')}</span>
+                            <span class="item-status status-${storedStatus}">${getStatusIcon(storedStatus, entry.index)}</span>
                         </div>
                     `;
                 });
@@ -743,14 +749,7 @@
         });
         
         // Advanced options toggle
-        function toggleAdvanced() {
-            const content = document.querySelector('.advanced-content');
-            const toggle = document.querySelector('.advanced-toggle');
-            const isVisible = content.style.display !== 'none';
-            
-            content.style.display = isVisible ? 'none' : 'block';
-            toggle.classList.toggle('active');
-        }
+        // toggleAdvanced removed - no longer needed for web hosting
         
         // Listen for playlist limit changes to update preview
         let playlistLimitTimeout;
@@ -806,14 +805,28 @@
         // Flag to track if we need to update progress after error
         let needsProgressUpdate = false;
         
+        // Store current download ID for linking files
+        let currentPlaylistDownloadId = null;
+        
+        // Store completed files for playlist downloads
+        let completedFiles = [];
+        
         // Get status icon HTML
-        function getStatusIcon(status) {
+        function getStatusIcon(status, fileIndex = null) {
             switch (status) {
                 case 'pending':
                     return '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" opacity="0.3"/></svg>';
                 case 'downloading':
                     return '<svg class="spinner-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" stroke-dasharray="50.27" stroke-dashoffset="25.13"/></svg>';
                 case 'completed':
+                    if (currentPlaylistDownloadId && fileIndex !== null) {
+                        return `<a href="/download/${currentPlaylistDownloadId}/${fileIndex - 1}" class="download-link" title="Download this file">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <circle cx="10" cy="10" r="8" fill="#10B981"/>
+                                <path d="M10 6V12M10 12L7 9M10 12L13 9" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </a>`;
+                    }
                     return '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" fill="#10B981"/><path d="M6 10L9 13L14 7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
                 case 'failed':
                     return '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" fill="#EF4444"/><path d="M7 7L13 13M13 7L7 13" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>';
@@ -824,13 +837,79 @@
         
         // Update preview item status
         function updatePreviewItemStatus(index, status) {
+            // Store the status in our map
+            playlistItemStatus.set(index, status);
+            
+            // Update the UI if the item is currently visible
             const item = document.getElementById(`preview-item-${index}`);
             if (!item) return;
             
             const statusSpan = item.querySelector('.item-status');
             if (statusSpan) {
                 statusSpan.className = `item-status status-${status}`;
-                statusSpan.innerHTML = getStatusIcon(status);
+                statusSpan.innerHTML = getStatusIcon(status, index);
+            }
+        }
+        
+        // Add completed file to the list
+        function addCompletedFile(fileInfo) {
+            const filesSection = document.getElementById('completed-files-section');
+            const filesList = document.getElementById('completed-files-list');
+            
+            // Show the section if hidden
+            if (filesSection.style.display === 'none') {
+                filesSection.style.display = 'block';
+            }
+            
+            // Create file item element
+            const fileItem = document.createElement('div');
+            fileItem.className = 'completed-file-item';
+            fileItem.id = `completed-file-${fileInfo.index}`;
+            
+            const fileSize = (fileInfo.size / 1024 / 1024).toFixed(2);
+            
+            fileItem.innerHTML = `
+                <div class="file-info">
+                    <div class="file-title">${fileInfo.title}</div>
+                    <div class="file-meta">${fileInfo.artist} • ${fileSize} MB</div>
+                </div>
+                <div class="file-actions">
+                    <button class="download-file-btn" onclick="downloadFile('${currentPlaylistDownloadId}', ${fileInfo.index - 1})">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 2V10M8 10L5 7M8 10L11 7M2 10V13C2 13.5523 2.44772 14 3 14H13C13.5523 14 14 13.5523 14 13V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Download
+                    </button>
+                </div>
+            `;
+            
+            filesList.appendChild(fileItem);
+            completedFiles.push(fileInfo);
+        }
+        
+        // Download individual file
+        function downloadFile(downloadId, fileIndex) {
+            window.location.href = `/download/${downloadId}/${fileIndex}`;
+            
+            // Mark button as downloaded
+            setTimeout(() => {
+                const btn = document.querySelector(`#completed-file-${fileIndex + 1} .download-file-btn`);
+                if (btn) {
+                    btn.classList.add('downloaded');
+                    btn.innerHTML = `
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M5 8L7 10L11 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Downloaded
+                    `;
+                }
+            }, 1000);
+        }
+        
+        // Download all completed files
+        function downloadAllCompleted() {
+            if (currentPlaylistDownloadId) {
+                window.location.href = `/download/${currentPlaylistDownloadId}`;
             }
         }
         
@@ -861,9 +940,15 @@
         async function startDownload() {
             console.log('Download button clicked!');
             
+            // Clear status map and completed files for new download
+            playlistItemStatus.clear();
+            completedFiles = [];
+            document.getElementById('completed-files-list').innerHTML = '';
+            document.getElementById('completed-files-section').style.display = 'none';
+            
             const url = document.getElementById('url').value.trim();
             const format = document.querySelector('input[name="format"]').value;
-            const directory = document.getElementById('directory').value.trim();
+            const directory = ''; // Removed for web hosting
             const playlistLimitValue = document.getElementById('playlist-limit').value.trim();
             const playlistLimit = playlistLimitValue ? parseInt(playlistLimitValue) : null;
             
@@ -883,8 +968,8 @@
             // Show immediate feedback
             const downloadBtn = document.getElementById('download-btn');
             const originalText = downloadBtn.querySelector('span').textContent;
-            downloadBtn.querySelector('span').textContent = 'Connecting...';
-            downloadBtn.disabled = true;
+            downloadBtn.querySelector('span').textContent = 'Adding to queue...';
+            // Don't disable the button - allow multiple downloads
             
             // Reset UI
             document.getElementById('error-container').style.display = 'none';
@@ -913,34 +998,9 @@
             retryBtn.style.display = canRetry ? 'flex' : 'none';
         }
         
-        function showDirectoryError(message) {
-            const errorDiv = document.getElementById('directory-error');
-            const input = document.getElementById('directory');
-            
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            input.classList.add('error');
-            
-            // Auto-expand advanced options to show the error
-            const advancedContent = document.querySelector('.advanced-content');
-            const advancedToggle = document.querySelector('.advanced-toggle');
-            if (advancedContent.style.display === 'none') {
-                advancedContent.style.display = 'block';
-                advancedToggle.classList.add('active');
-            }
-            
-            // Clear error after 5 seconds
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-                input.classList.remove('error');
-            }, 5000);
-        }
+        // Directory error function removed for web hosting
         
-        // Clear directory error when user types
-        document.getElementById('directory').addEventListener('input', () => {
-            document.getElementById('directory-error').style.display = 'none';
-            document.getElementById('directory').classList.remove('error');
-        });
+        // Directory error clearing removed for web hosting
         
         // Retry failed download
         function retryDownload() {
@@ -959,7 +1019,7 @@
                 btn.classList.toggle('active', btn.dataset.format === lastFailedDownload.format);
             });
             
-            document.getElementById('directory').value = lastFailedDownload.directory;
+            // Directory restore removed for web hosting
             document.getElementById('playlist-limit').value = lastFailedDownload.playlistLimit;
             
             // Clear the failed download info
@@ -1012,9 +1072,19 @@
                 // Store download ID for later use
                 const downloadId = data.download_id;
                 currentDownloadId = downloadId;  // Store globally for cancellation
-                downloadBtn.querySelector('span').textContent = 'Downloading...';
+                currentPlaylistDownloadId = downloadId; // Store for file download links
                 
-                // Show cancel button
+                // Reset button text immediately after adding to queue
+                downloadBtn.querySelector('span').textContent = originalText;
+                
+                // Clear the URL input for next download
+                document.getElementById('url').value = '';
+                document.getElementById('url').dispatchEvent(new Event('input'));
+                
+                // Show success message briefly
+                document.getElementById('status-text').textContent = 'Added to download queue!';
+                
+                // Show cancel button for this download
                 document.querySelector('.cancel-btn').style.display = 'flex';
                 
                 // Start listening for progress updates
@@ -1038,9 +1108,9 @@
                                 if (realEventSource.readyState !== EventSource.CLOSED) {
                                     realEventSource.close();
                                 }
-                                // Re-enable UI
-                                downloadBtn.querySelector('span').textContent = originalText;
-                                downloadBtn.disabled = false;
+                                // Don't change button state - allow new downloads
+                                // downloadBtn.querySelector('span').textContent = originalText;
+                                // downloadBtn.disabled = false;
                                 document.querySelector('.cancel-btn').style.display = 'none';
                                 currentDownloadId = null;
                                 
@@ -1150,6 +1220,14 @@
                             document.getElementById('progress-fill').style.width = '90%';
                             document.getElementById('progress-percentage').textContent = '90%';
                         }
+                    } else if (progress.status === 'file_completed') {
+                        // A file in the playlist has completed
+                        if (progress.file_info && progress.playlist_index) {
+                            addCompletedFile({
+                                ...progress.file_info,
+                                index: progress.playlist_index
+                            });
+                        }
                     } else if (progress.status === 'completed') {
                         let completedText = `Processing completed`;
                         document.getElementById('status-text').textContent = completedText;
@@ -1176,28 +1254,19 @@
                         
                         document.getElementById('download-info').innerHTML = fileInfo;
                         
-                        // Set up download button
+                        // Set up download button for browser download
+                        document.getElementById('browser-download-btn').textContent = 'Download File';
                         document.getElementById('browser-download-btn').onclick = async () => {
-                            // Check if custom directory was used
-                            const customDir = document.getElementById('directory').value.trim();
-                            if (customDir) {
-                                // Files are already in custom directory
-                                const response = await fetch(`/download/${progress.download_id}`);
-                                const data = await response.json();
-                                document.getElementById('download-info').innerHTML += 
-                                    `<br><br><strong>Files saved to:</strong> ${data.message}`;
-                                document.getElementById('browser-download-btn').style.display = 'none';
-                            } else {
-                                // Download to browser
-                                window.location.href = `/download/${progress.download_id}`;
-                            }
+                            window.location.href = `/download/${progress.download_id}`;
                         };
                         
                         realEventSource.close();
-                        downloadBtn.querySelector('span').textContent = originalText;
-                        downloadBtn.disabled = false;
+                        // Don't change button state - allow new downloads
+                        // downloadBtn.querySelector('span').textContent = originalText;
+                        // downloadBtn.disabled = false;
                         document.querySelector('.cancel-btn').style.display = 'none';
                         currentDownloadId = null;
+                        currentPlaylistDownloadId = null;
                     } else if (progress.status === 'playlist_completed') {
                         const successCount = progress.total_files;
                         const failedCount = failedDownloads.length;
@@ -1235,44 +1304,40 @@
                             infoHtml += `</ul></div>`;
                         }
                         
+                        // Add download options
+                        infoHtml += `<div style="margin-top: 1rem; text-align: center;">
+                                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.5rem;">
+                                        Individual files can be downloaded from the list above
+                                    </p>
+                                    </div>`;
+                        
                         document.getElementById('download-info').innerHTML = infoHtml;
                         
                         // Enable download button for ZIP file
-                        const customDir = document.getElementById('directory').value.trim();
-                        if (customDir) {
-                            document.getElementById('browser-download-btn').textContent = 'View File Locations';
-                        } else {
-                            document.getElementById('browser-download-btn').textContent = 'Download ZIP File';
-                        }
+                        document.getElementById('browser-download-btn').textContent = 'Download All as ZIP';
                         document.getElementById('browser-download-btn').onclick = async () => {
-                            if (customDir) {
-                                // Files are already in custom directory
-                                const response = await fetch(`/download/${progress.download_id}`);
-                                const data = await response.json();
-                                document.getElementById('download-info').innerHTML += 
-                                    `<br><br><strong>Files saved to:</strong> ${data.message}`;
-                                document.getElementById('browser-download-btn').style.display = 'none';
-                            } else {
-                                // Download ZIP to browser
-                                window.location.href = `/download/${progress.download_id}`;
-                            }
+                            window.location.href = `/download/${progress.download_id}`;
                         };
                         
                         realEventSource.close();
-                        downloadBtn.querySelector('span').textContent = originalText;
-                        downloadBtn.disabled = false;
+                        // Don't change button state - allow new downloads
+                        // downloadBtn.querySelector('span').textContent = originalText;
+                        // downloadBtn.disabled = false;
                         document.querySelector('.cancel-btn').style.display = 'none';
                         currentDownloadId = null;
+                        currentPlaylistDownloadId = null;
                     } else if (progress.status === 'cancelled') {
                         document.getElementById('status-text').textContent = 'Download cancelled';
                         document.getElementById('progress-details').textContent = '';
                         document.querySelector('.cancel-btn').style.display = 'none';
                         document.getElementById('progress-fill').classList.remove('active');
                         realEventSource.close();
-                        downloadBtn.querySelector('span').textContent = originalText;
-                        downloadBtn.disabled = false;
+                        // Don't change button state - allow new downloads
+                        // downloadBtn.querySelector('span').textContent = originalText;
+                        // downloadBtn.disabled = false;
                         document.querySelector('.cancel-btn').style.display = 'none';
                         currentDownloadId = null;
+                        currentPlaylistDownloadId = null;
                         // Show a message
                         setTimeout(() => {
                             document.getElementById('progress-container').style.display = 'none';
@@ -1326,10 +1391,12 @@
                     const statusText = document.getElementById('status-text').textContent;
                     if (!statusText.includes('Downloading video') && !statusText.includes('Processing playlist')) {
                         realEventSource.close();
-                        downloadBtn.querySelector('span').textContent = originalText;
-                        downloadBtn.disabled = false;
+                        // Don't change button state - allow new downloads
+                        // downloadBtn.querySelector('span').textContent = originalText;
+                        // downloadBtn.disabled = false;
                         document.querySelector('.cancel-btn').style.display = 'none';
                         currentDownloadId = null;
+                        currentPlaylistDownloadId = null;
                         if (!statusText.includes('completed')) {
                             throw new Error('Connection lost');
                         }
@@ -1343,8 +1410,9 @@
                 // Show error with retry option
                 showError(`Error: ${error.message}`, true);
                 document.getElementById('progress-container').style.display = 'none';
+                // Reset button text but don't disable - allow new downloads
                 downloadBtn.querySelector('span').textContent = originalText;
-                downloadBtn.disabled = false;
+                // downloadBtn.disabled = false;
                 document.querySelector('.cancel-btn').style.display = 'none';
                 currentDownloadId = null;
             }

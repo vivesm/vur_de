@@ -48,9 +48,15 @@ def init_db():
             error_message TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             completed_at DATETIME,
-            custom_dir TEXT
+            expires_at DATETIME
         )
     ''')
+    
+    # Add expires_at column if it doesn't exist (for migration)
+    try:
+        conn.execute('ALTER TABLE download_history ADD COLUMN expires_at DATETIME')
+    except:
+        pass  # Column already exists
     conn.close()
 
 # Initialize database on startup
@@ -80,7 +86,6 @@ class DownloadQueueManager:
                 'status': DownloadStatus.PENDING.value,
                 'added_at': datetime.now().isoformat(),
                 'progress': 0,
-                'custom_dir': download_info.get('directory'),
                 'playlist_limit': download_info.get('playlist_limit')
             }
             
@@ -235,8 +240,7 @@ class DownloadQueueManager:
                 download_item['url'],
                 download_item['format'],
                 download_id,
-                download_item.get('playlist_limit'),
-                download_item.get('custom_dir')
+                download_item.get('playlist_limit')
             )
             
             # Monitor progress queue for completion
@@ -291,14 +295,13 @@ class DownloadQueueManager:
         try:
             conn = sqlite3.connect('downloads.db')
             conn.execute('''
-                INSERT INTO download_history (id, url, format, status, custom_dir)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO download_history (id, url, format, status)
+                VALUES (?, ?, ?, ?)
             ''', (
                 download_item['id'],
                 download_item['url'],
                 download_item['format'],
-                download_item['status'],
-                download_item.get('custom_dir')
+                download_item['status']
             ))
             conn.commit()
             conn.close()
@@ -349,10 +352,12 @@ class DownloadQueueManager:
                 file_size = 0
                 artist = ''
             
+            # Set expiration to 24 hours from now
             conn.execute('''
                 UPDATE download_history 
                 SET status = ?, title = ?, artist = ?, file_path = ?, 
-                    file_size = ?, completed_at = CURRENT_TIMESTAMP
+                    file_size = ?, completed_at = CURRENT_TIMESTAMP,
+                    expires_at = datetime('now', '+24 hours')
                 WHERE id = ?
             ''', (DownloadStatus.COMPLETED.value, title, artist, file_path, file_size, download_id))
             conn.commit()
@@ -423,6 +428,57 @@ def cleanup_old_downloads():
     except Exception as e:
         app.logger.error(f"Error cleaning up old downloads: {e}")
 
+# Cleanup expired downloads from disk and database
+def cleanup_expired_downloads():
+    """Remove expired downloads from disk and database"""
+    try:
+        conn = sqlite3.connect('downloads.db')
+        cursor = conn.cursor()
+        
+        # Find expired downloads
+        cursor.execute('''
+            SELECT id, file_path FROM download_history 
+            WHERE expires_at < datetime('now') 
+            AND status = ? 
+            AND file_path IS NOT NULL
+        ''', (DownloadStatus.COMPLETED.value,))
+        
+        expired_downloads = cursor.fetchall()
+        
+        for download_id, file_path in expired_downloads:
+            # Delete files from disk
+            if file_path and os.path.exists(file_path):
+                try:
+                    # If it's a directory (for playlists), remove all files
+                    if os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
+                    else:
+                        os.remove(file_path)
+                    app.logger.info(f"Deleted expired file: {file_path}")
+                except Exception as e:
+                    app.logger.error(f"Error deleting file {file_path}: {e}")
+            
+            # Remove from completed_downloads if still there
+            if download_id in completed_downloads:
+                del completed_downloads[download_id]
+        
+        # Delete expired records from database
+        cursor.execute('''
+            DELETE FROM download_history 
+            WHERE expires_at < datetime('now') 
+            AND status = ?
+        ''', (DownloadStatus.COMPLETED.value,))
+        
+        deleted_count = cursor.rowcount
+        conn.commit()
+        conn.close()
+        
+        if deleted_count > 0:
+            app.logger.info(f"Cleaned up {deleted_count} expired downloads")
+            
+    except Exception as e:
+        app.logger.error(f"Error cleaning up expired downloads: {e}")
+
 # Cleanup old progress queues and related data
 def cleanup_stale_downloads():
     """Remove stale download data to prevent memory leaks"""
@@ -466,6 +522,7 @@ def schedule_cleanup():
     cleanup_old_downloads()
     cleanup_old_files()
     cleanup_stale_downloads()  # Add stale download cleanup
+    cleanup_expired_downloads()  # Add expired download cleanup
     # Schedule next cleanup in 30 minutes
     timer = threading.Timer(1800.0, schedule_cleanup)
     timer.daemon = True
@@ -539,7 +596,7 @@ def create_progress_hook(download_id, playlist_index=None, playlist_total=None):
             progress_queue.put(progress_data)
     return progress_hook
 
-def download_video(url, format_type, download_id, playlist_limit=None, custom_dir=None):
+def download_video(url, format_type, download_id, playlist_limit=None):
     try:
         # Create queue for this download
         if download_id not in progress_queues:
@@ -553,8 +610,8 @@ def download_video(url, format_type, download_id, playlist_limit=None, custom_di
         # Check if it's a playlist
         is_playlist = 'playlist' in url or 'list=' in url
         
-        # Use custom directory if provided, otherwise use temp directory
-        download_dir = custom_dir if custom_dir else TEMP_DIR
+        # Always use temp directory for web hosting
+        download_dir = TEMP_DIR
         
         # Base options for extraction only
         extract_opts = {
@@ -680,13 +737,22 @@ def download_video(url, format_type, download_id, playlist_limit=None, custom_di
                             if format_type == 'audio':
                                 update_id3_tags(expected_path, title, artist, album)
                             
-                            downloaded_files.append({
+                            file_info = {
                                 'filename': expected_filename,
                                 'filepath': expected_path,
                                 'title': title,
                                 'artist': artist,
                                 'album': album,
                                 'size': os.path.getsize(expected_path)
+                            }
+                            downloaded_files.append(file_info)
+                            
+                            # Send file completed event
+                            progress_queue.put({
+                                'status': 'file_completed',
+                                'file_info': file_info,
+                                'playlist_index': idx,
+                                'playlist_total': total_videos
                             })
                         else:
                             # Fallback: find the most recent file
@@ -703,13 +769,22 @@ def download_video(url, format_type, download_id, playlist_limit=None, custom_di
                                 if format_type == 'audio':
                                     update_id3_tags(filepath, title, artist, album)
                                 
-                                downloaded_files.append({
+                                file_info = {
                                     'filename': filename,
                                     'filepath': filepath,
                                     'title': title,
                                     'artist': artist,
                                     'album': album,
                                     'size': os.path.getsize(filepath)
+                                }
+                                downloaded_files.append(file_info)
+                                
+                                # Send file completed event
+                                progress_queue.put({
+                                    'status': 'file_completed',
+                                    'file_info': file_info,
+                                    'playlist_index': idx,
+                                    'playlist_total': total_videos
                                 })
                                 
                     except Exception as e:
@@ -732,7 +807,6 @@ def download_video(url, format_type, download_id, playlist_limit=None, custom_di
                     'files': downloaded_files,
                     'format': format_type,
                     'timestamp': datetime.now().isoformat(),
-                    'custom_dir': custom_dir,
                     'download_dir': download_dir
                 }
                 
@@ -844,7 +918,6 @@ def download_video(url, format_type, download_id, playlist_limit=None, custom_di
                     'format': format_type,
                     'timestamp': datetime.now().isoformat(),
                     'size': os.path.getsize(filepath) if os.path.exists(filepath) else 0,
-                    'custom_dir': custom_dir,
                     'download_dir': download_dir
                 }
                 
@@ -987,7 +1060,6 @@ def download():
         
         url = data.get('url', '').strip()
         format_type = data.get('format', 'video')
-        download_dir = data.get('directory', '').strip()
         playlist_limit = data.get('playlist_limit', None)  # Default to None (unlimited)
         
         # Validate URL
@@ -995,37 +1067,10 @@ def download():
             app.logger.error(f"Invalid URL: {url}")
             return jsonify({'error': 'Invalid URL. Please enter a valid YouTube URL.'}), 400
         
-        # Validate custom directory if provided
-        if download_dir:
-            # Check for suspicious patterns BEFORE resolving path
-            if '..' in download_dir or download_dir.endswith('..'):
-                return jsonify({'error': 'Invalid directory path'}), 400
-                
-            # Prevent directory traversal attacks
-            download_dir = os.path.abspath(download_dir)
-            
-            # Additional check after resolving
-            if download_dir.count('/') > 10:
-                return jsonify({'error': 'Invalid directory path'}), 400
-                
-            # Ensure the path doesn't try to access system directories
-            forbidden_paths = ['/etc', '/usr', '/bin', '/sbin', '/boot', '/dev', '/proc', '/sys']
-            for forbidden in forbidden_paths:
-                if download_dir.startswith(forbidden):
-                    return jsonify({'error': 'Access to system directories is not allowed'}), 400
-            
-            if not os.path.exists(download_dir):
-                return jsonify({'error': f'Directory does not exist: {download_dir}'}), 400
-            if not os.path.isdir(download_dir):
-                return jsonify({'error': f'Path is not a directory: {download_dir}'}), 400
-            if not os.access(download_dir, os.W_OK):
-                return jsonify({'error': f'Directory is not writable: {download_dir}'}), 400
-        
-        # Add to queue instead of starting directly
+        # Add to queue without directory parameter
         download_id = download_queue.add_to_queue({
             'url': url,
             'format': format_type,
-            'directory': download_dir,
             'playlist_limit': playlist_limit
         })
         
@@ -1061,6 +1106,7 @@ def progress(download_id):
                     if download_id in download_cancelled:
                         del download_cancelled[download_id]
                     break
+                # Don't break on file_completed, just pass it through
                     
             except queue.Empty:
                 # Send heartbeat to keep connection alive
@@ -1079,67 +1125,57 @@ def progress(download_id):
 
 @app.route('/download/<download_id>')
 def download_file(download_id):
-    """Serve the downloaded file to trigger browser download"""
+    """Serve the downloaded file(s) to trigger browser download"""
     if download_id not in completed_downloads:
         return jsonify({'error': 'Download not found'}), 404
     
     download_info = completed_downloads[download_id]
     
-    # Handle playlist downloads - create ZIP file
+    # For single files, redirect to the specific file download
+    if not download_info.get('is_playlist'):
+        return download_single_file(download_id, 0)
+    
+    # For playlists, create and serve ZIP file
+    return download_playlist_zip(download_id)
+
+@app.route('/download/<download_id>/<int:file_index>')
+def download_single_file(download_id, file_index):
+    """Serve a single downloaded file"""
+    if download_id not in completed_downloads:
+        return jsonify({'error': 'Download not found'}), 404
+    
+    download_info = completed_downloads[download_id]
+    
+    # Handle playlist file
     if download_info.get('is_playlist'):
-        # If custom directory was used, don't create ZIP (files are already where user wants them)
-        if download_info.get('custom_dir'):
-            return jsonify({
-                'message': f'Files downloaded to: {download_info["download_dir"]}',
-                'files': [f['filename'] for f in download_info['files']],
-                'total_size': sum(f['size'] for f in download_info['files'])
-            }), 200
+        if file_index < 0 or file_index >= len(download_info['files']):
+            return jsonify({'error': 'Invalid file index'}), 404
             
-        # Create a ZIP file containing all downloaded files
-        zip_filename = f"{download_info['playlist_title'].replace(' ', '_')}.zip"
-        zip_path = os.path.join(TEMP_DIR, zip_filename)
+        file_info = download_info['files'][file_index]
+        filepath = file_info['filepath']
+        filename = file_info['filename']
         
-        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for file_info in download_info['files']:
-                if os.path.exists(file_info['filepath']):
-                    # Add file to zip with just the filename (not full path)
-                    zipf.write(file_info['filepath'], file_info['filename'])
-        
-        # Clean up after sending
-        @after_this_request
-        def cleanup(response):
-            try:
-                os.remove(zip_path)
-                # Also clean up the individual files
-                for file_info in download_info['files']:
-                    if os.path.exists(file_info['filepath']):
-                        os.remove(file_info['filepath'])
-            except Exception as e:
-                app.logger.error(f"Error cleaning up files: {e}")
-            return response
-        
+        if not os.path.exists(filepath):
+            return jsonify({'error': 'File not found'}), 404
+            
+        # Don't clean up individual files from playlists
         return send_file(
-            zip_path,
+            filepath,
             as_attachment=True,
-            download_name=zip_filename,
-            mimetype='application/zip'
+            download_name=filename,
+            mimetype='audio/mpeg' if download_info['format'] == 'audio' else 'video/mp4'
         )
     
-    # Handle single file downloads
+    # Handle single file (file_index should be 0)
+    if file_index != 0:
+        return jsonify({'error': 'Invalid file index'}), 404
+        
     filepath = download_info['filepath']
-    
-    # If custom directory was used, don't serve file (it's already where user wants it)
-    if download_info.get('custom_dir'):
-        return jsonify({
-            'message': f'File downloaded to: {filepath}',
-            'filename': download_info['filename'],
-            'size': download_info['size']
-        }), 200
     
     if not os.path.exists(filepath):
         return jsonify({'error': 'File not found'}), 404
     
-    # Clean up after sending
+    # Clean up single files after sending
     @after_this_request
     def cleanup(response):
         try:
@@ -1148,13 +1184,92 @@ def download_file(download_id):
             app.logger.error(f"Error cleaning up file: {e}")
         return response
     
-    # Serve file with attachment header to trigger browser download
     return send_file(
         filepath,
         as_attachment=True,
         download_name=download_info['filename'],
         mimetype='audio/mpeg' if download_info['format'] == 'audio' else 'video/mp4'
     )
+
+def download_playlist_zip(download_id):
+    """Create and serve a ZIP file containing all playlist files"""
+    if download_id not in completed_downloads:
+        return jsonify({'error': 'Download not found'}), 404
+    
+    download_info = completed_downloads[download_id]
+    
+    if not download_info.get('is_playlist'):
+        return jsonify({'error': 'Not a playlist download'}), 404
+    
+    # Create a ZIP file containing all downloaded files
+    zip_filename = f"{download_info['playlist_title'].replace(' ', '_')}.zip"
+    zip_path = os.path.join(TEMP_DIR, zip_filename)
+    
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for file_info in download_info['files']:
+            if os.path.exists(file_info['filepath']):
+                # Add file to zip with just the filename (not full path)
+                zipf.write(file_info['filepath'], file_info['filename'])
+    
+    # Clean up after sending
+    @after_this_request
+    def cleanup(response):
+        try:
+            os.remove(zip_path)
+            # Also clean up the individual files
+            for file_info in download_info['files']:
+                if os.path.exists(file_info['filepath']):
+                    os.remove(file_info['filepath'])
+        except Exception as e:
+            app.logger.error(f"Error cleaning up files: {e}")
+        return response
+    
+    return send_file(
+        zip_path,
+        as_attachment=True,
+        download_name=zip_filename,
+        mimetype='application/zip'
+    )
+
+@app.route('/download/info/<download_id>')
+def get_download_info(download_id):
+    """Get information about a completed download"""
+    if download_id not in completed_downloads:
+        return jsonify({'error': 'Download not found'}), 404
+    
+    download_info = completed_downloads[download_id]
+    
+    # Prepare response data
+    if download_info.get('is_playlist'):
+        files = []
+        for idx, file_info in enumerate(download_info['files']):
+            files.append({
+                'index': idx,
+                'filename': file_info['filename'],
+                'title': file_info.get('title', 'Unknown'),
+                'artist': file_info.get('artist', 'Unknown'),
+                'album': file_info.get('album', ''),
+                'size': file_info['size'],
+                'download_url': f'/download/{download_id}/{idx}'
+            })
+        
+        return jsonify({
+            'is_playlist': True,
+            'playlist_title': download_info['playlist_title'],
+            'files': files,
+            'total_size': sum(f['size'] for f in download_info['files']),
+            'download_all_url': f'/download/{download_id}'
+        })
+    else:
+        return jsonify({
+            'is_playlist': False,
+            'filename': download_info['filename'],
+            'title': download_info.get('title', 'Unknown'),
+            'artist': download_info.get('artist', 'Unknown'),
+            'album': download_info.get('album', ''),
+            'size': download_info['size'],
+            'download_url': f'/download/{download_id}/0'
+        })
 
 @app.route('/cancel/<download_id>', methods=['POST'])
 def cancel_download(download_id):
@@ -1235,7 +1350,7 @@ def download_history():
         
         cursor.execute('''
             SELECT id, url, title, artist, format, file_size, status, 
-                   error_message, created_at, completed_at, custom_dir
+                   error_message, created_at, completed_at
             FROM download_history
             ORDER BY created_at DESC
             LIMIT 100
@@ -1261,7 +1376,7 @@ def redownload_from_history(download_id):
         cursor = conn.cursor()
         
         cursor.execute('''
-            SELECT url, format, custom_dir
+            SELECT url, format
             FROM download_history
             WHERE id = ?
         ''', (download_id,))
@@ -1273,8 +1388,7 @@ def redownload_from_history(download_id):
             # Add to queue
             new_download_id = download_queue.add_to_queue({
                 'url': row['url'],
-                'format': row['format'],
-                'directory': row['custom_dir']
+                'format': row['format']
             })
             
             return jsonify({

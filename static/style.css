@@ -693,6 +693,23 @@ body {
     color: var(--error);
 }
 
+/* Download link styles */
+.item-status .download-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: transform 0.2s ease;
+}
+
+.item-status .download-link:hover {
+    transform: scale(1.1);
+}
+
+.item-status .download-link:active {
+    transform: scale(0.95);
+}
+
 @keyframes spin {
     from {
         transform: rotate(0deg);
@@ -700,6 +717,111 @@ body {
     to {
         transform: rotate(360deg);
     }
+}
+
+/* Completed Files Section */
+.completed-files-section {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-top: 1rem;
+    opacity: 0;
+    animation: fadeIn 0.3s ease forwards;
+}
+
+.completed-files-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.completed-files-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.bulk-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.completed-files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.completed-file-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    background: var(--bg-primary);
+    border-radius: var(--radius);
+    transition: var(--transition);
+}
+
+.completed-file-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.file-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-title {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-meta {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.file-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: 1rem;
+}
+
+.download-file-btn {
+    padding: 0.5rem 1rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.download-file-btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.download-file-btn.downloaded {
+    background: var(--success);
+    opacity: 0.7;
+}
+
+.download-file-btn svg {
+    width: 16px;
+    height: 16px;
 }
 
 .more-videos {

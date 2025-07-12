@@ -14,7 +14,8 @@ A modern Python-based YouTube video/audio downloader with both CLI and web inter
 - **Download Queue**: Advanced queue management with pause/resume capabilities
 - **Metadata Support**: Automatic ID3 tag updates with artist, title, and album information
 - **Thumbnail Embedding**: Album art automatically embedded in MP3 files
-- **Custom Download Directory**: Specify where to save files (default: `/Volumes/MUSIC`)
+- **Web Hosting Ready**: Files stored on server for browser download
+- **Individual File Downloads**: Download specific files from playlists
 - **Error Handling**: Graceful error handling with helpful messages
 - **Dark Mode**: Toggle between light and dark themes
 
@@ -70,9 +71,10 @@ Follow the prompts:
    - Paste YouTube URLs with one click
    - Preview video information before downloading
    - Real-time download progress with visual status indicators
-   - Download files directly to your browser or save to custom directory
+   - Download files directly to your browser
    - Support for playlists with customizable limits
-   - Visual checkmarks for completed downloads in playlists
+   - Visual download links for each completed file
+   - Download individual files or entire playlist as ZIP
    - Download queue with multiple concurrent downloads
    - Dark/light theme toggle
 
@@ -84,13 +86,15 @@ Follow the prompts:
 - **Visual Progress**: Live status indicators (⏳ pending → 🔄 downloading → ✅ completed → ❌ failed)
 - **Playlist Support**: 
   - Download entire playlists or set custom limits
-  - Visual checkmarks appear as each video completes
+  - Visual download links appear as each video completes
   - Failed downloads are clearly marked and tracked
+  - Individual file downloads from completed playlists
+  - Download all files as ZIP archive
 - **Download Queue**: 
   - View active, pending, and completed downloads
   - Queue sidebar with download history
   - Support for multiple concurrent downloads
-- **Default Directory**: Pre-configured to save to `/Volumes/MUSIC`
+- **Server Storage**: Files temporarily stored on server (24-hour retention)
 - **Error Recovery**: Playlist downloads continue even if individual videos fail
 - **Dark Mode**: Toggle between light and dark themes
 - **Responsive Design**: Works on desktop and mobile devices
@@ -99,8 +103,10 @@ Follow the prompts:
 
 - **Server-Sent Events (SSE)**: Real-time progress updates without polling
 - **Per-Download Queues**: Multiple users can download simultaneously without conflicts
-- **Automatic Cleanup**: Old downloads are automatically cleaned up after 24 hours
+- **Automatic Cleanup**: Downloaded files are automatically deleted after 24 hours
 - **Memory Management**: Periodic cleanup of completed downloads to prevent memory leaks
+- **File Retention**: Database tracking of file expiration times
+- **Individual Downloads**: Separate routes for downloading individual playlist files
 
 ## Advanced Features
 
@@ -158,17 +164,19 @@ vur-de/
 ```
 
 ### Recent Improvements
-- **Visual Download Progress**: Added checkmarks to playlist items as they complete
+- **Web Hosting Support**: Removed custom directory option for server deployment
+- **Individual File Downloads**: Added routes for downloading specific playlist files
+- **Download Links**: Visual download links in playlist preview
+- **ZIP Downloads**: Download entire playlists as ZIP files
+- **File Retention**: 24-hour automatic cleanup with database tracking
 - **Download Queue System**: Implemented advanced queue management with sidebar UI
 - **Error Recovery**: Playlist downloads now continue even when individual videos fail
-- **Default Directory**: Set `/Volumes/MUSIC` as the default download location
 - **UI Enhancements**: 
   - Dark mode support
   - Visual status indicators for each download
   - Improved progress tracking for playlists
 - Fixed progress bar updates with per-download progress queues
 - Improved download button reliability and user feedback
-- Fixed custom directory issues for web downloads
 - Added proper ID3 tag support with mutagen library
 - Implemented thumbnail embedding for MP3 files
 - Added comprehensive error handling and user-friendly messages
