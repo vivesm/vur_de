@@ -24,21 +24,12 @@ A native desktop application for downloading YouTube videos and audio, built wit
   - Windows: Download from [ffmpeg.org](https://ffmpeg.org)
   - Linux: `sudo apt install ffmpeg` or equivalent
 
-## Installation
-
-### For Users
-
-1. Download the latest release for your platform from [Releases](https://github.com/vivesm/vur-de-electron/releases)
-2. macOS: Open the `.dmg` file and drag Vur-De to Applications
-3. Windows: Run the installer `.exe`
-4. Linux: Make the `.AppImage` executable and run it
-
-### For Developers
+## For Developers
 
 ```bash
 # Clone the repository
-git clone https://github.com/vivesm/vur-de-electron.git
-cd vur-de-electron
+git clone https://github.com/vivesm/Vur-De.git
+cd Vur-De
 
 # Install dependencies
 npm install
@@ -47,9 +38,7 @@ npm install
 npm start
 
 # Build for your platform
-npm run build-mac    # For macOS
-npm run build-win    # For Windows
-npm run build-linux  # For Linux
+npm run build
 ```
 
 ## Usage
@@ -80,38 +69,6 @@ Install yt-dlp using the commands shown in the app or from [yt-dlp.org](https://
 
 ### No audio in downloaded videos
 Install FFmpeg using the commands in the Requirements section
-
-## Building from Source
-
-### Prerequisites
-- Node.js 16 or later
-- npm or yarn
-- Xcode (for macOS builds)
-
-### Build Commands
-```bash
-# Install dependencies
-npm install
-
-# Run locally
-npm start
-
-# Build for production
-npm run dist  # All platforms
-npm run build-mac  # macOS only
-npm run build-win  # Windows only
-npm run build-linux  # Linux only
-```
-
-### Code Signing (macOS)
-To sign the app for distribution:
-1. Join Apple Developer Program
-2. Create a Developer ID certificate
-3. Set environment variables:
-   ```bash
-   export APPLE_ID="your-apple-id@example.com"
-   export APPLE_ID_PASSWORD="your-app-specific-password"
-   ```
 
 ## License
 
