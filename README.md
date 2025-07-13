@@ -1,186 +1,125 @@
-# Vur-De YouTube Downloader
+# Vur-De Desktop App
 
-A modern Python-based YouTube video/audio downloader with both CLI and web interfaces, powered by `yt-dlp`.
+A native desktop application for downloading YouTube videos and audio, built with Electron.
 
 ## Features
 
-- **Dual Interface**: Command-line tool and beautiful web interface
-- **Download Formats**: 
-  - Audio extraction to MP3 with metadata and album art
-  - Video download in MP4 format
-- **Playlist Support**: Download multiple videos from playlists with configurable limits
-- **Real-time Progress**: Live download progress updates in web interface
-- **Visual Progress Tracking**: Checkmarks appear next to each video as they complete in playlists
-- **Download Queue**: Advanced queue management with pause/resume capabilities
-- **Metadata Support**: Automatic ID3 tag updates with artist, title, and album information
-- **Thumbnail Embedding**: Album art automatically embedded in MP3 files
-- **Web Hosting Ready**: Files stored on server for browser download
-- **Individual File Downloads**: Download specific files from playlists
-- **Error Handling**: Graceful error handling with helpful messages
-- **Dark Mode**: Toggle between light and dark themes
+- 🎵 Download audio as MP3
+- 🎬 Download video as MP4
+- 👀 Real-time preview with thumbnails
+- 📊 Download progress tracking
+- 🎯 Native macOS/Windows/Linux app
+- 🔒 Secure - runs locally on your computer
+- 🚀 No IP blocking issues
 
-## Prerequisites
+## Requirements
 
-- Python 3.9+
-- `yt-dlp` library
-- Flask (for web interface)
-- FFmpeg (required for audio extraction and format conversion)
+- **yt-dlp** must be installed on your system
+  - macOS: `brew install yt-dlp`
+  - Windows: `pip install yt-dlp`
+  - Linux: `pip install yt-dlp` or use your package manager
+
+- **FFmpeg** (for audio conversion)
+  - macOS: `brew install ffmpeg`
+  - Windows: Download from [ffmpeg.org](https://ffmpeg.org)
+  - Linux: `sudo apt install ffmpeg` or equivalent
 
 ## Installation
 
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/vivesm/vur_de.git
-   cd vur_de
-   ```
+### For Users
 
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+1. Download the latest release for your platform from [Releases](https://github.com/vivesm/vur-de-electron/releases)
+2. macOS: Open the `.dmg` file and drag Vur-De to Applications
+3. Windows: Run the installer `.exe`
+4. Linux: Make the `.AppImage` executable and run it
 
-3. Install FFmpeg:
-   - **macOS**: `brew install ffmpeg`
-   - **Ubuntu/Debian**: `sudo apt-get install ffmpeg`
-   - **Windows**: Download from [ffmpeg.org](https://ffmpeg.org/download.html)
+### For Developers
+
+```bash
+# Clone the repository
+git clone https://github.com/vivesm/vur-de-electron.git
+cd vur-de-electron
+
+# Install dependencies
+npm install
+
+# Run in development mode
+npm start
+
+# Build for your platform
+npm run build-mac    # For macOS
+npm run build-win    # For Windows
+npm run build-linux  # For Linux
+```
 
 ## Usage
 
-### Command Line Interface
+1. Launch Vur-De from your Applications folder
+2. Paste a YouTube URL
+3. Choose Audio (MP3) or Video (MP4)
+4. Click Download
+5. Files are saved to your Downloads folder (configurable in Settings)
 
-Run the CLI tool:
-```bash
-python vur_de-v3.py
-```
+## Settings
 
-Follow the prompts:
-1. Enter the YouTube URL
-2. Choose format (1 for Audio/MP3, 2 for Video/MP4)
-3. (Optional) Enter a custom download directory
-
-### Web Interface
-
-1. Start the Flask server:
-   ```bash
-   python app.py
-   ```
-
-2. Open your browser to `http://localhost:8080`
-
-3. Features:
-   - Paste YouTube URLs with one click
-   - Preview video information before downloading
-   - Real-time download progress with visual status indicators
-   - Download files directly to your browser
-   - Support for playlists with customizable limits
-   - Visual download links for each completed file
-   - Download individual files or entire playlist as ZIP
-   - Download queue with multiple concurrent downloads
-   - Dark/light theme toggle
-
-## Web Interface Details
-
-### Key Features
-
-- **Instant Preview**: See video title, duration, and thumbnail before downloading
-- **Visual Progress**: Live status indicators (⏳ pending → 🔄 downloading → ✅ completed → ❌ failed)
-- **Playlist Support**: 
-  - Download entire playlists or set custom limits
-  - Visual download links appear as each video completes
-  - Failed downloads are clearly marked and tracked
-  - Individual file downloads from completed playlists
-  - Download all files as ZIP archive
-- **Download Queue**: 
-  - View active, pending, and completed downloads
-  - Queue sidebar with download history
-  - Support for multiple concurrent downloads
-- **Server Storage**: Files temporarily stored on server (24-hour retention)
-- **Error Recovery**: Playlist downloads continue even if individual videos fail
-- **Dark Mode**: Toggle between light and dark themes
-- **Responsive Design**: Works on desktop and mobile devices
-
-### Technical Implementation
-
-- **Server-Sent Events (SSE)**: Real-time progress updates without polling
-- **Per-Download Queues**: Multiple users can download simultaneously without conflicts
-- **Automatic Cleanup**: Downloaded files are automatically deleted after 24 hours
-- **Memory Management**: Periodic cleanup of completed downloads to prevent memory leaks
-- **File Retention**: Database tracking of file expiration times
-- **Individual Downloads**: Separate routes for downloading individual playlist files
-
-## Advanced Features
-
-### Metadata Handling
-- Automatically extracts and embeds metadata (artist, title, album)
-- Embeds video thumbnails as album art in MP3 files
-- Proper filename generation based on metadata
-
-### Error Handling
-- Network connection failures
-- Private or age-restricted videos
-- FFmpeg availability checks
-- Custom directory validation
-
-### Performance Optimizations
-- Rate limiting for preview requests
-- Efficient progress event streaming
-- Automatic file cleanup
-- Memory-efficient download tracking
+Access settings via the gear icon:
+- **Download Location**: Choose where files are saved
+- **Audio Quality**: 128-320 kbps
+- **Keep Window on Top**: Always visible
+- **Start Minimized**: Launch in system tray
 
 ## Troubleshooting
 
-### Common Issues
+### "yt-dlp not installed" error
+Install yt-dlp using the commands shown in the app or from [yt-dlp.org](https://github.com/yt-dlp/yt-dlp)
 
-1. **"FFmpeg not found" warning**
-   - Install FFmpeg using the instructions above
-   - Audio downloads will fail without FFmpeg
+### Downloads fail
+- Check your internet connection
+- Ensure the YouTube URL is valid
+- Try updating yt-dlp: `yt-dlp -U`
 
-2. **Download stuck at "Starting download..."**
-   - Check your internet connection
-   - Verify the YouTube URL is valid and accessible
-   - Check server logs for detailed error messages
+### No audio in downloaded videos
+Install FFmpeg using the commands in the Requirements section
 
-3. **"Access denied" errors**
-   - Video may be private, age-restricted, or region-blocked
-   - Try a different video or check video availability
+## Building from Source
 
-4. **Progress bar not updating**
-   - Refresh the page and try again
-   - Check browser console for errors
+### Prerequisites
+- Node.js 16 or later
+- npm or yarn
+- Xcode (for macOS builds)
 
-## Development
+### Build Commands
+```bash
+# Install dependencies
+npm install
 
-### Project Structure
+# Run locally
+npm start
+
+# Build for production
+npm run dist  # All platforms
+npm run build-mac  # macOS only
+npm run build-win  # Windows only
+npm run build-linux  # Linux only
 ```
-vur-de/
-├── app.py              # Flask web application
-├── vur_de-v3.py       # CLI application
-├── templates/
-│   └── index.html     # Web interface
-├── static/
-│   └── style.css      # Styling
-├── requirements.txt   # Python dependencies
-└── README.md          # This file
-```
 
-### Recent Improvements
-- **Web Hosting Support**: Removed custom directory option for server deployment
-- **Individual File Downloads**: Added routes for downloading specific playlist files
-- **Download Links**: Visual download links in playlist preview
-- **ZIP Downloads**: Download entire playlists as ZIP files
-- **File Retention**: 24-hour automatic cleanup with database tracking
-- **Download Queue System**: Implemented advanced queue management with sidebar UI
-- **Error Recovery**: Playlist downloads now continue even when individual videos fail
-- **UI Enhancements**: 
-  - Dark mode support
-  - Visual status indicators for each download
-  - Improved progress tracking for playlists
-- Fixed progress bar updates with per-download progress queues
-- Improved download button reliability and user feedback
-- Added proper ID3 tag support with mutagen library
-- Implemented thumbnail embedding for MP3 files
-- Added comprehensive error handling and user-friendly messages
+### Code Signing (macOS)
+To sign the app for distribution:
+1. Join Apple Developer Program
+2. Create a Developer ID certificate
+3. Set environment variables:
+   ```bash
+   export APPLE_ID="your-apple-id@example.com"
+   export APPLE_ID_PASSWORD="your-app-specific-password"
+   ```
 
 ## License
 
-This project is provided as-is for educational purposes.
+MIT
+
+## Credits
+
+Built with:
+- [Electron](https://electronjs.org)
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp)
+- [FFmpeg](https://ffmpeg.org)
