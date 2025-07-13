@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vur-De - YouTube Downloader</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Title Bar (custom for macOS) -->
+        <div class="title-bar">
+            <div class="title">Vur-De</div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="logo-section">
+                <div class="logo">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                        <rect width="40" height="40" rx="8" fill="#FF0000"/>
+                        <path d="M16 14V26L26 20L16 14Z" fill="white"/>
+                    </svg>
+                    <h1>Vur-De</h1>
+                </div>
+                <p class="tagline">Download YouTube videos & music locally</p>
+            </div>
+
+            <div class="download-card">
+                <div class="url-input-group">
+                    <input 
+                        type="text" 
+                        id="url-input" 
+                        placeholder="Paste YouTube URL here..."
+                        class="url-input"
+                    >
+                    <button class="paste-btn" onclick="pasteFromClipboard()">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M10.5 1.5H12.5C13.0523 1.5 13.5 1.94772 13.5 2.5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V2.5C2.5 1.94772 2.94772 1.5 3.5 1.5H5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            <rect x="5.5" y="0.5" width="5" height="3" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                        Paste
+                    </button>
+                </div>
+
+                <div class="format-selector">
+                    <button class="format-btn active" data-format="audio" onclick="selectFormat('audio')">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M13 2L7 6H3V14H7L13 18V2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M16.5 7.5C17.1667 8.16667 17.5 9.08333 17.5 10C17.5 10.9167 17.1667 11.8333 16.5 12.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Audio (MP3)
+                    </button>
+                    <button class="format-btn" data-format="video" onclick="selectFormat('video')">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <rect x="2" y="4" width="16" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
+                            <path d="M8 10L13 7V13L8 10Z" fill="currentColor"/>
+                        </svg>
+                        Video (MP4)
+                    </button>
+                </div>
+
+                <button class="download-btn" id="download-btn" onclick="startDownload()">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M3 17C3 18.1046 3.89543 19 5 19H15C16.1046 19 17 18.1046 17 17M10 14V2M10 14L14 10M10 14L6 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Download</span>
+                </button>
+            </div>
+
+            <!-- Preview Section -->
+            <div id="preview-container" class="preview-section" style="display: none;">
+                <div id="preview-loading" class="preview-loading">
+                    <div class="spinner"></div>
+                    <p>Fetching video info...</p>
+                </div>
+                <div id="preview-content" class="preview-content"></div>
+            </div>
+
+            <!-- Progress Section -->
+            <div id="progress-container" class="progress-section" style="display: none;">
+                <h3>Download Progress</h3>
+                <div class="progress-info">
+                    <p id="status-text">Preparing download...</p>
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <div class="progress-details">
+                        <span id="progress-percentage">0%</span>
+                        <span id="progress-speed"></span>
+                    </div>
+                </div>
+                <button class="cancel-btn" onclick="cancelDownload()" style="display: none;">Cancel</button>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settings-container" class="settings-section" style="display: none;">
+                <h3>Settings</h3>
+                <div class="settings-content">
+                    <div class="setting-item">
+                        <label>Download Location:</label>
+                        <div class="path-selector">
+                            <input type="text" id="download-path" readonly>
+                            <button onclick="chooseDownloadFolder()">Browse</button>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label>Audio Quality:</label>
+                        <select id="audio-quality">
+                            <option value="128">128 kbps</option>
+                            <option value="192" selected>192 kbps</option>
+                            <option value="256">256 kbps</option>
+                            <option value="320">320 kbps</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="keep-on-top">
+                            Keep window on top
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="start-minimized">
+                            Start minimized
+                        </label>
+                    </div>
+                    <button class="save-settings-btn" onclick="saveSettings()">Save Settings</button>
+                </div>
+            </div>
+
+            <!-- Error Messages -->
+            <div id="error-container" class="error-message" style="display: none;">
+                <p id="error-text"></p>
+            </div>
+
+            <!-- YT-DLP Not Installed Warning -->
+            <div id="ytdlp-warning" class="warning-message" style="display: none;">
+                <h3>yt-dlp Not Installed</h3>
+                <p>This app requires yt-dlp to download videos.</p>
+                <p>Install it using:</p>
+                <code>brew install yt-dlp</code>
+                <p>or</p>
+                <code>pip install yt-dlp</code>
+                <button onclick="window.electronAPI.openDownloadFolder()">Open Terminal</button>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <button class="footer-btn" onclick="toggleSettings()">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M8 1V3M8 13V15M15 8H13M3 8H1M12.95 3.05L11.54 4.46M4.46 11.54L3.05 12.95M12.95 12.95L11.54 11.54M4.46 4.46L3.05 3.05" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                Settings
+            </button>
+            <button class="footer-btn" onclick="window.electronAPI.openDownloadFolder()">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M2 5V13C2 13.5523 2.44772 14 3 14H13C13.5523 14 14 13.5523 14 13V5M2 5V4C2 3.44772 2.44772 3 3 3H6.17157C6.43679 3 6.69114 3.10536 6.87868 3.29289L8 4.41421C8.18754 4.60175 8.44189 4.70711 8.70711 4.70711H13C13.5523 4.70711 14 5.15482 14 5.70711V5H2Z" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+                Open Downloads
+            </button>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>
